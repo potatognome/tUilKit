@@ -1,0 +1,44 @@
+# Byte-compiled files
+*.pyc
+*.pyo
+*.pycache/
+
+# Virtual environment folders
+venv/
+env/
+
+# Environment configuration files
+*.env
+.env.*
+
+# Logs and temporary files
+*.log
+*.tmp
+
+# System files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE/Editor settings
+.vscode/
+.idea/
+
+# Test coverage reports
+.coverage
+htmlcov/
+
+# Pytest cache
+.pytest_cache/
+
+# Build files
+dist/
+build/
+*.egg-info/
+
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+
+# Generated documentation
+docs/
+*.pdf
