@@ -1,6 +1,18 @@
 
 # CHANGELOG
 
+## [0.5.2] - 2025-12-28
+
+### Added
+- New test file `test_interfaces.py` for comprehensive testing of ConfigLoader, ColourManager, Logger, and FileSystem interfaces.
+
+### Changed
+- Updated `ConfigLoader.ensure_folders_exist` to create folders based on `LOG_FILES` paths instead of non-existent `MAKE_FOLDERS`.
+- Removed broken code in `config.py` that referenced invalid config keys.
+
+### Fixed
+- ConfigLoader now properly handles folder creation for log files.
+
 ## [0.5.1] - 2025-12-27
 
 ### Added

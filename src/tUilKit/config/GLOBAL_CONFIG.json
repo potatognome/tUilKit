@@ -1,26 +1,26 @@
 {
-    "FOLDERS": {
-        "CONFIG"            : "config/",  
-        "TEST_LOGS"         : "testLogs/",
-        "LOG_FILES"         : "logFiles/",
-        "INPUT"             : "inputData/",
-        "OUTPUT"            : "outputData/"
-    },
-    "FILES": {
-        "LOG"               : "runtime.log",
-        "INIT"              : "init.log"
-    },
-    "MAKE_FOLDERS": {
-        "PROJECT"           : "New_Project/",
-        "CONFIG"            : "config/",
-        "LOGS"              : "logFiles/"
-    },
-    "MAKE_TEST_FOLDERS": {
-        "PROJECT"           : "Test_New_Project/",
-        "CONFIG"            : "config/",
-        "LOGS"              : "testLogs/"    
+    "PROJECT_NAME"              : "tUilKit",
+    "PROJECT_DESCRIPTION"       : "tUilKit utility package",
+    "AUTHOR"                    : "Daniel Austin <the.potato.gnome@gmail.com>",
+    "VERSION"                   : "0.5.2",
 
-    }
-    
+    "LOG_FILES"                 : {
+        "SESSION"               : "logs/RUNTIME.log",
+        "MASTER"                : "logs/MASTER.log"
+    },
+
+    "CONFIG_FILES"              : {
+        "COLOURS"               : "config/COLOURS.json",
+        "BORDER_PATTERNS"       : "config/BORDER_PATTERNS.json",
+        "GLOBAL_CONFIG"         : "config/GLOBAL_CONFIG.json"
+    },
+
+    "time_stamp_format": "%Y%m%d_%H%M%S",
+    "time_stamp_logs": true,
+    "time_stamp_test_logs": true,
+    "time_stamp_files": false,
+    "time_stamp_test_files": true,
+    "time_stamp_folders": false,
+    "time_stamp_test_folders": true
 }
  

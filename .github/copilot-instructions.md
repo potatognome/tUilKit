@@ -38,11 +38,10 @@ Agent Rules & Best Practices
 
 When to Modify Which Files
 - Modify `src/tUilKit/utils/` and `tests/` freely for bug fixes, small refactors, and new features.
-- Modify `src/tUilKit/interfaces/` only when needed — adding interface methods requires updating implementations and tests.
+- Modify `src/tUilKit/interfaces/` when needed — adding interface methods requires updating implementations and tests.
 - Modify JSON files in `src/tUilKit/config/` for configuration improvements; include examples and update documentation.
 - Avoid editing historical log archives except as part of a controlled test update.
- - Avoid editing historical log archives except as part of a controlled test update.
- - Avoid modifying OS metadata files (for example `desktop.ini`) and other hidden system files; these should remain untouched by agents.
+- Avoid modifying OS metadata files (for example `desktop.ini`) and other hidden system files; these should remain untouched by agents.
 
 Testing & Local Development (PowerShell)
 ```powershell
