@@ -1,6 +1,30 @@
 
 # CHANGELOG
 
+## [0.5.1] - 2025-12-27
+
+### Added
+- New colour key system with `!` prefixed keys (e.g., `!date`, `!time`, `!proc`) for improved readability and consistency.
+- Support for foreground and background color combinations in `COLOUR_KEY` using `FG|BG` format (e.g., `GREEN|BLACK`).
+- `interpret_codes` method in `ColourManager` to interpret colour codes in text strings using `{colour}` syntax.
+- Support for multiple log files in all logging methods by changing `log_file` parameter to `log_files` (list of strings).
+- Updated interfaces (`ColourInterface`, `FileSystemInterface`, `LoggerInterface`) to reflect new method signatures.
+
+### Changed
+- Updated `COLOUR_KEY` in `COLOURS.json` with new keys and marked old keys as deprecated for migration.
+- Modified `ColourManager` to parse `FG|BG` colour values and set both foreground and background ANSI codes.
+- Changed logging methods to accept `log_files` as a list, allowing simultaneous logging to multiple files.
+- Updated test files to use new colour keys and multiple log file support.
+- Enhanced `colour_path` to use new `!` prefixed keys for path components.
+
+### Fixed
+- Improved colour reset handling to reset both foreground and background colours.
+
+### Notes
+- Old colour keys (e.g., `ARGS`, `COMMAND`) are deprecated; migrate to new `!` prefixed keys (e.g., `!args`, `!cmd`).
+- Logging methods now expect `log_files` as a list; single file can be passed as `[file_path]`.
+- Ensure `COLOURS.json` is updated to use the new format for full background colour support.
+
 ## [0.4.2] - 2025-11-29
 
 ### Added

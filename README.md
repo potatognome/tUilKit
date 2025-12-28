@@ -14,6 +14,8 @@ tUilKit is organized into three main components:
 
 ```
 /src
+        /config
+            BORDER_PATTERNS.json        # Border Patterns
             COLUMN_MAPPING.json         # DataFrame column mapping
             COLOURS.json                # Foreground text COLOUR_KEY and RGB Reference
             GLOBAL_CONFIG.json          # Folder paths and logging/display options
@@ -24,6 +26,7 @@ tUilKit is organized into three main components:
         /interfaces
             colour_interface.py         # ColourInterface (abstract base class)
             config_loader_interface.py  # ConfigLoaderInterface (abstract base class)
+            df_interface.py             # DataFrameInterface (abstract base class)
             file_system_interface.py    # FileSystemInterface (abstract base class)
             logger_interface.py         # LoggerInterface (abstract base class)
         /utils

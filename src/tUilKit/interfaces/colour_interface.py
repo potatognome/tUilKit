@@ -26,3 +26,7 @@ class ColourInterface(ABC):
     @abstractmethod
     def colour_path(self, path: str) -> str:
         pass
+
+    @abstractmethod
+    def interpret_codes(self, text: str) -> str:
+        pass

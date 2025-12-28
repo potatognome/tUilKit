@@ -1,5 +1,6 @@
 include LICENSE
 include README.md
+include CHANGELOG.md
 recursive-include src/tUilKit/config *.json
 recursive-include src/tUilKit/config *.py
 recursive-include src/tUilKit/config *.txt
