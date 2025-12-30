@@ -27,7 +27,7 @@ class ConfigLoader(ConfigLoaderInterface):
         for log_path in log_files.values():
             folder = os.path.dirname(log_path)
             if folder:
-                file_system.validate_and_create_folder(folder)
+                file_system.validate_and_create_folder(folder, category="fs")
 
 # Create a global instance
 config_loader = ConfigLoader()

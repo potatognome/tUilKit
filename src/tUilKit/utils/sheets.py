@@ -68,28 +68,47 @@ def find_composite_keys(df1, df2):
                 best_combo = list(combo)
     return best_combo if best_combo else common_cols
 
-def load_column_mapping(config_loader=None):
+def load_column_mapping(config_loader=None, logger=None):
     """Loads column mapping from JSON configuration using ConfigLoader."""
     if config_loader is None:
         config_loader = ConfigLoader()
     # Try to get the mapping path using config loader
     mapping_path = config_loader.get_json_path('COLUMN_MAPPING.json')
-    with open(mapping_path, "r") as file:
-        mapping_json = json.load(file)
-        # Support both {"COLUMN_MAPPING": {...}} and flat {...}
-        if "COLUMN_MAPPING" in mapping_json:
-            return mapping_json["COLUMN_MAPPING"]
-        return mapping_json
+    try:
+        with open(mapping_path, "r") as file:
+            mapping_json = json.load(file)
+            # Support both {"COLUMN_MAPPING": {...}} and flat {...}
+            if "COLUMN_MAPPING" in mapping_json:
+                if logger:
+                    logger.colour_log("!info", "Loaded column mapping from", "!file", mapping_path, category="default")
+                return mapping_json["COLUMN_MAPPING"]
+            if logger:
+                logger.colour_log("!info", "Loaded column mapping from", "!file", mapping_path, category="default")
+            return mapping_json
+    except Exception as e:
+        if logger:
+            logger.log_exception("Failed to load column mapping", e, category="error")
+        return {}
 
-def smart_merge(df_list, merge_type="outer", config_loader=None):
+def smart_merge(df_list, merge_type="outer", config_loader=None, logger=None):
     """Merges multiple dataframes intelligently with column mapping."""
-    col_mapping = load_column_mapping(config_loader)
-    df_list = [df.rename(columns=col_mapping) for df in df_list]
-    return pd.concat(df_list, axis=0, ignore_index=True)
+    if logger:
+        logger.colour_log("!info", f"Starting smart merge of {len(df_list)} DataFrames", category="default")
+    try:
+        col_mapping = load_column_mapping(config_loader, logger)
+        df_list = [df.rename(columns=col_mapping) for df in df_list]
+        result = pd.concat(df_list, axis=0, ignore_index=True)
+        if logger:
+            logger.colour_log("!info", f"Smart merge completed successfully. Result shape: {result.shape}", category="default")
+        return result
+    except Exception as e:
+        if logger:
+            logger.log_exception("Smart merge failed", e, category="error")
+        raise
 
 # DataFrame handler using the interface
 class SmartDataFrameHandler(DataFrameInterface):
-    def merge(self, df_list, merge_type="outer", config_loader=None):
-        return smart_merge(df_list, merge_type, config_loader=config_loader)
+    def merge(self, df_list, merge_type="outer", config_loader=None, logger=None):
+        return smart_merge(df_list, merge_type, config_loader=config_loader, logger=logger)
     def compare(self, df1, df2):
         return smart_diff(df1, df2) 

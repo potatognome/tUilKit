@@ -39,20 +39,28 @@ tUilKit is organized into three main components:
             calc.py                     # Add-on - Specialized calculations
             wallet.py                   # Add-on - Specialized crypto wallet utilities
             data.py                     # Add-on - Specialized data utilities
+    /docs
+        tUilKit_Comprehensive_Usage_Guide.md  # Complete usage documentation
     /tests
-        /testLogs
+        /testOutputLogs
         test_module.py                  # Tests for interfaces and project folder logic
         test_output.py                  # Tests for output/logging functions
+        test_fs_ops.py                  # Tests for file system operations
+        test_multi_category.py          # Tests for multi-category logging
 ```
 
 ## Interfaces
 
 tUilKit uses Python abstract base classes to define clear interfaces for:
-- **LoggerInterface**: Logging, coloured output, and border printing
-- **ColourInterface**: Colour formatting and ANSI code management
-- **FileSystemInterface**: File and folder operations
+
+**4 Primary Interfaces:**
+- **LoggerInterface**: Logging, coloured output, and border printing with selective file routing
+- **ColourInterface**: Colour formatting and ANSI code management  
+- **FileSystemInterface**: File and folder operations with integrated logging
 - **ConfigLoaderInterface**: Configuration loading and path resolution
-- **DataFrameInterface**: Data frame operations
+
+**Additional Interface:**
+- **DataFrameInterface**: Data frame operations and intelligent column handling
 
 All implementations in `/utils` and `/config` inherit from these interfaces, ensuring modularity and testability.
 
@@ -73,26 +81,44 @@ pip install -r requirements.txt
 
 ## Usage
 
-Sample usage and tests can be found in the `/tests` folder.
+For comprehensive usage instructions, see [`docs/tUilKit_Comprehensive_Usage_Guide.md`](docs/tUilKit_Comprehensive_Usage_Guide.md).
+
+### Quick Start
 
 ```python
-# Example: Using Logger and ColourManager
-
+import os
+import json
 from tUilKit.utils.output import Logger, ColourManager
-import json, os
+from tUilKit.utils.fs import FileSystem
+from tUilKit.config.config import ConfigLoader
 
-# Load colour config
+# Load colour configuration
 COLOUR_CONFIG_PATH = os.path.join("src", "tUilKit", "config", "COLOURS.json")
 with open(COLOUR_CONFIG_PATH, "r") as f:
     colour_config = json.load(f)
 
+# Initialize core components
 colour_manager = ColourManager(colour_config)
 logger = Logger(colour_manager)
+config_loader = ConfigLoader()
+file_system = FileSystem(logger)
 
-log_file = "example.log"
-logger.colour_log("INFO", "This is a coloured log message.", log_file=log_file)
-logger.log_done(log_file=log_file)
+# Basic logging with colours
+logger.colour_log("!info", "tUilKit initialized", "!done", "ready")
+
+# Multi-category logging (new feature)
+logger.colour_log("!info", "Complex operation", category=["fs", "error"])
 ```
+
+### Key Features
+
+- **4 Primary Interfaces**: Logger, ColourManager, FileSystem, ConfigLoader
+- **Multi-Category Logging**: Log to multiple files simultaneously
+- **Colour-Coded Output**: Consistent terminal formatting with COLOUR_KEY
+- **DataFrame Utilities**: Smart merging and column mapping
+- **Configuration-Driven**: JSON-based customization
+
+Sample usage and tests can be found in the `/tests` folder.
 
 ## Contributing
 If you would like to contribute, please fork the repository and use a feature branch. Pull requests are warmly welcome.

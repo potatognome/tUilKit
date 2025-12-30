@@ -26,6 +26,12 @@ ANSI_RESET = ESCAPES['OCTAL'] + COMMANDS['RESET']
 
 config_loader = ConfigLoader()
 
+LOG_FILES = config_loader.global_config.get("LOG_FILES", {})
+LOG_FILES["SESSION"] = LOG_FILES.get("SESSION", "logs/RUNTIME.log")
+LOG_FILES["MASTER"] = LOG_FILES.get("MASTER", "logs/MASTER.log")
+LOG_FILES["ERROR"] = LOG_FILES.get("ERROR", "logs/ERROR.log")
+LOG_FILES["INIT"] = LOG_FILES.get("INIT", "logs/INIT.log")
+LOG_FILES["FS"] = LOG_FILES.get("FS", "logs/FS.log")
 
 class ColourManager(ColourInterface):
     def __init__(self, colour_config: dict):
@@ -129,9 +135,34 @@ class ColourManager(ColourInterface):
 
 
 class Logger(LoggerInterface):
-    def __init__(self, colour_manager: ColourManager):
+    def __init__(self, colour_manager: ColourManager, log_files=None):
         self.Colour_Mgr = colour_manager
+        self.log_files = log_files or LOG_FILES.copy()
         self._log_queue = []
+        # Define log categories for selective logging
+        self.LOG_KEYS = {
+            "default": ["MASTER", "SESSION"],
+            "error": ["ERROR", "SESSION", "MASTER"],
+            "fs": ["MASTER", "SESSION", "FS"],
+            "init": ["INIT", "SESSION", "MASTER"]
+        }
+
+    def _get_log_files(self, category):
+        """
+        Returns a list of log file paths for the given category or categories.
+        category can be str or list of str.
+        """
+        if isinstance(category, str):
+            categories = [category]
+        elif isinstance(category, list):
+            categories = category
+        else:
+            categories = ["default"]
+        all_files = []
+        for cat in categories:
+            keys = self.LOG_KEYS.get(cat, self.LOG_KEYS["default"])
+            all_files.extend([self.log_files.get(key) for key in keys if self.log_files.get(key)])
+        return list(set(all_files))  # unique
 
     @staticmethod
     def split_time_string(time_string: str) -> tuple[str, str]:
@@ -168,7 +199,9 @@ class Logger(LoggerInterface):
                         continue
                 else:
                     self.flush_log_queue(log_file)
-                    with open(log_file, 'a') as log:
+                    if not os.path.exists(log_file):
+                        self._log_queue.append((f"Log file created: {log_file}", log_file, "\n"))
+                    with open(log_file, 'a', encoding='utf-8') as log:
                         log.write(self.Colour_Mgr.strip_ansi(message) + end)
         
         if log_to in ("term", "both"):
@@ -181,15 +214,22 @@ class Logger(LoggerInterface):
     def flush_log_queue(self, log_file: str):
         log_dir = os.path.dirname(log_file)
         if os.path.exists(log_dir):
-            with open(log_file, 'a') as log:
+            with open(log_file, 'a', encoding='utf-8') as log:
                 for msg, lf, end in self._log_queue:
                     if lf == log_file:
                         log.write(self.Colour_Mgr.strip_ansi(msg) + end)
             # Remove flushed messages
             self._log_queue = [item for item in self._log_queue if item[1] != log_file]
 
-    def colour_log(self, *args, spacer=0, log_files=None, end="\n", log_to="both", time_stamp=True):
+    def colour_log(self, *args, category="default", spacer=0, log_files=None, end="\n", log_to="both", time_stamp=True):
         # Exposed for external use in tUilKit: Use to replace print(f"") with colored, timestamped logging.
+        category_files = self._get_log_files(category)
+        if log_files is None:
+            effective_log_files = category_files
+        else:
+            if isinstance(log_files, str):
+                log_files = [log_files]
+            effective_log_files = list(set(category_files + log_files))
         if time_stamp:
             date, time = self.split_time_string(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             prefix = ("!date", date, "!time", time)
@@ -200,7 +240,7 @@ class Logger(LoggerInterface):
         else:
             coloured_message = self.Colour_Mgr.colour_fstr(*prefix, *args)
         # Pass time_stamp=False so log_message does not add its own (uncoloured) timestamp
-        self.log_message(coloured_message, log_files=log_files, end=end, log_to=log_to, time_stamp=False)
+        self.log_message(coloured_message, log_files=effective_log_files, end=end, log_to=log_to, time_stamp=False)
 
     def colour_log_text(self, message: str, log_files=None, log_to="both", time_stamp=True):
         if time_stamp:
@@ -211,14 +251,21 @@ class Logger(LoggerInterface):
         coloured_message = prefix + self.Colour_Mgr.interpret_codes(message)
         self.log_message(coloured_message, log_files=log_files, log_to=log_to, time_stamp=False)
 
-    def log_exception(self, description: str, exception: Exception, log_files = None, log_to: str = "both") -> None:
+    def log_exception(self, description: str, exception: Exception, category="error", log_files=None, log_to: str = "both") -> None:
         # Exposed for external use in tUilKit: Use for logging exceptions with colored formatting.
-        self.colour_log("", log_files=log_files, time_stamp=False, log_to=log_to)
-        self.colour_log("", log_files=log_files, time_stamp=False, log_to=log_to)
-        self.colour_log("!error", "UNEXPECTED ERROR:", "!info", description, "!error", str(exception), log_files=log_files, log_to=log_to)
+        category_files = self._get_log_files(category)
+        if log_files is None:
+            effective_log_files = category_files
+        else:
+            if isinstance(log_files, str):
+                log_files = [log_files]
+            effective_log_files = list(set(category_files + log_files))
+        self.colour_log("", log_files=effective_log_files, time_stamp=False, log_to=log_to)
+        self.colour_log("", log_files=effective_log_files, time_stamp=False, log_to=log_to)
+        self.colour_log("!error", "UNEXPECTED ERROR:", "!info", description, "!error", str(exception), log_files=effective_log_files, log_to=log_to)
 
     def log_done(self, log_files = None, end: str = "\n", log_to: str = "both", time_stamp=True):
-        self.colour_log("!done", "Done!", log_files=log_files, end=end, log_to=log_to, time_stamp=time_stamp)
+        self.colour_log("!done", "Done!", category="default", log_files=log_files, end=end, log_to=log_to, time_stamp=time_stamp)
 
     def log_column_list(self, df, filename, log_files=None, log_to: str = "both"):
         self.colour_log(
@@ -227,6 +274,7 @@ class Logger(LoggerInterface):
             ": ",
             "!info", "Columns:",
             "!output", df.columns.tolist(),
+            category="default",
             log_files=log_files,
             log_to=log_to)
 
@@ -244,7 +292,7 @@ class Logger(LoggerInterface):
 
     def print_top_border(self, pattern, length, index=0, log_files=None, border_colour='!proc', log_to: str = "both"):
         top = pattern['TOP'][index] * (length // len(pattern['TOP'][index]))
-        self.colour_log(border_colour, f" {top}", log_files=log_files, log_to=log_to)
+        self.colour_log(border_colour, f" {top}", category="default", log_files=log_files, log_to=log_to)
 
     def print_text_line(self, text, pattern, length, index=0, log_files=None, border_colour='!proc', text_colour='!proc', log_to: str = "both"):
         left = pattern['LEFT'][index]
@@ -252,15 +300,14 @@ class Logger(LoggerInterface):
         inner_text_length = len(left) + len(text) + len(right)
         trailing_space_length = length - inner_text_length - 2
         text_line_args = [border_colour, left, text_colour, text, f"{' ' * trailing_space_length}", border_colour, right]
-        self.colour_log(*text_line_args, log_files=log_files, log_to=log_to)
+        self.colour_log(*text_line_args, category="default", log_files=log_files, log_to=log_to)
 
     def print_bottom_border(self, pattern, length, index=0, log_files=None, border_colour='!proc', log_to: str = "both"):
         bottom = pattern['BOTTOM'][index] * (length // len(pattern['BOTTOM'][index]))
-        self.colour_log(border_colour, f" {bottom}", log_files=log_files, log_to=log_to)
+        self.colour_log(border_colour, f" {bottom}", category="default", log_files=log_files, log_to=log_to)
 
     def apply_border(self, text, pattern, total_length=None, index=0, log_files=None, border_colour='!proc', text_colour='!proc', log_to: str = "both"):
         # Exposed for external use in tUilKit: Use for highlighting header text in the terminal with borders.
-        inner_text_length = len(pattern['LEFT'][index]) + len(text) + len(pattern['RIGHT'][index])
         inner_text_length = len(pattern['LEFT'][index]) + len(text) + len(pattern['RIGHT'][index])
         if total_length and total_length > inner_text_length:
             length = total_length

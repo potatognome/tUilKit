@@ -1,6 +1,30 @@
 
 # CHANGELOG
 
+## [0.6.1] - 2025-12-30
+
+### Added
+- **Multi-category logging support**: Enhanced `_get_log_files()` methods in `Logger` and `FileSystem` classes to accept both string and list categories, enabling simultaneous logging to multiple log files (e.g., `category=["fs", "error"]`).
+- **DataFrame logging integration**: Added optional `logger` parameter to `load_column_mapping()` and `smart_merge()` functions in `sheets.py` with category-based logging for info and error messages.
+- **Comprehensive usage documentation**: Created `docs/tUilKit_Comprehensive_Usage_Guide.md` with complete initialization instructions, interface breakdowns, and advanced feature examples.
+- **Multi-category logging tests**: New `test_multi_category.py` with comprehensive tests for single-category, multi-category, filesystem integration, backwards compatibility, and log file deduplication.
+- **Documentation folder**: Added `/docs` directory to project structure for comprehensive guides.
+
+### Changed
+- Updated `README.md` with new folder structure including `/docs` and updated test files.
+- Clarified "4 Primary Interfaces" section in README to distinguish core interfaces (Logger, Colour, FileSystem, ConfigLoader) from additional DataFrameInterface.
+- Enhanced `SmartDataFrameHandler.merge()` to pass logger parameter through to underlying functions.
+- Improved backwards compatibility for single string categories while adding list support.
+
+### Fixed
+- Ensured log file deduplication when multiple categories map to the same log files.
+- Maintained existing API compatibility for all logging methods.
+
+### Notes
+- Multi-category logging allows complex operations to be logged to multiple relevant log files simultaneously (e.g., filesystem errors logged to both `FS` and `ERROR` logs).
+- All existing code continues to work unchanged; new multi-category features are opt-in.
+- New comprehensive documentation provides complete usage examples for all interfaces and features.
+
 ## [0.5.2] - 2025-12-28
 
 ### Added

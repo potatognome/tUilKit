@@ -21,10 +21,20 @@ if base_dir not in sys.path:
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
 from tUilKit.config.config import ConfigLoader
+import os
+import json
+import time
+import argparse
+from datetime import datetime
 
 COLOUR_CONFIG_PATH = os.path.join(base_dir, "tUilKit", "config", "COLOURS.json")
+BORDER_PATTERN_PATH = os.path.join(base_dir, "tUilKit", "config", "BORDER_PATTERNS.json")
+
 with open(COLOUR_CONFIG_PATH, "r") as f:
     colour_config = json.load(f)
+
+with open(BORDER_PATTERN_PATH, "r") as f:
+    border_patterns = json.load(f)
 
 colour_manager = ColourManager(colour_config)
 logger = Logger(colour_manager)
@@ -34,6 +44,13 @@ file_system = FileSystem(logger)
 TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
 TEST_LOG_FILE = os.path.join(TEST_LOG_FOLDER, "test_interfaces_output.log")
 
+# Ensure all log folders exist
+all_log_paths = list(logger.log_files.values()) + [TEST_LOG_FILE]
+for path in all_log_paths:
+    folder = os.path.dirname(path)
+    if folder:
+        file_system.validate_and_create_folder(folder, category="fs")
+
 if not os.path.exists(TEST_LOG_FOLDER):
     os.makedirs(TEST_LOG_FOLDER, exist_ok=True)
 
@@ -42,30 +59,36 @@ if args.clean:
     for fname in os.listdir(TEST_LOG_FOLDER):
         if fname.endswith('.log'):
             try:
-                os.remove(os.path.join(TEST_LOG_FOLDER, fname))
+                # Create backup before removing
+                base, ext = os.path.splitext(fname)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                backup_fname = f"{base}_{timestamp}.bak"
+                os.rename(os.path.join(TEST_LOG_FOLDER, fname), os.path.join(TEST_LOG_FOLDER, backup_fname))
+                print(f"Backed up {fname} to {backup_fname}")
             except Exception as e:
-                print(f"Could not remove {fname}: {e}")
+                print(f"Could not backup {fname}: {e}")
 
 # --- 3. Test functions ---
 
 def test_config_loader(function_log=None):
     # Test locating and logging the path of the global config file
     global_config_path = config_loader.get_json_path('GLOBAL_CONFIG.json')
-    logger.colour_log("!file", colour_manager.colour_path(global_config_path), "!info", "Global config file path.", log_files=[TEST_LOG_FILE, function_log])
+    log_files = [f for f in [TEST_LOG_FILE, function_log] if f]
+    logger.colour_log("!file", colour_manager.colour_path(global_config_path), "!info", "Global config file path.", log_files=log_files)
 
     # Log paths of log files
     log_files = config_loader.global_config.get("LOG_FILES", {})
     for key, path in log_files.items():
-        logger.colour_log("!file", f"{key}:", colour_manager.colour_path(path), log_files=[TEST_LOG_FILE, function_log])
+        logger.colour_log("!file", f"{key}:", colour_manager.colour_path(path), log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
     # Read and log description
     description = config_loader.global_config.get("PROJECT_DESCRIPTION", "No description")
-    logger.colour_log("!text", f"Project Description: {description}", log_files=[TEST_LOG_FILE, function_log])
+    logger.colour_log("!text", f"Project Description: {description}", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
     # Ensure folders exist
     config_loader.ensure_folders_exist(file_system)
 
-    logger.colour_log("!proc", "ConfigLoader tests passed.", log_files=[TEST_LOG_FILE, function_log])
+    logger.colour_log("!proc", "ConfigLoader tests passed.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
 def test_colour_manager(function_log=None):
     # Test colour functions
@@ -79,22 +102,22 @@ def test_colour_manager(function_log=None):
     assert "{RED}" not in interpreted, "interpret_codes should replace {RED}"
     assert "\033[38;2;255;0;0m" in interpreted, "Should include ANSI code"
 
-    logger.colour_log("!proc", "ColourManager tests passed.", log_files=[TEST_LOG_FILE, function_log])
+    logger.colour_log("!proc", "ColourManager tests passed.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
 def test_logger(function_log=None):
     # Test colour_log
-    logger.colour_log("!info", "Testing Logger interface.", log_files=[TEST_LOG_FILE, function_log])
+    logger.colour_log("!info", "Testing Logger interface.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
     # Test colour_log_text
-    logger.colour_log_text("Interpreted {GREEN}green{RESET} text.", log_files=[TEST_LOG_FILE, function_log])
+    logger.colour_log_text("Interpreted {GREEN}green{RESET} text.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
     # Test log_exception (simulate)
     try:
         raise ValueError("Test exception")
     except Exception as e:
-        logger.log_exception("Test exception logging", e, log_files=[TEST_LOG_FILE, function_log])
+        logger.log_exception("Test exception logging", e, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
-    logger.colour_log("!proc", "Logger tests passed.", log_files=[TEST_LOG_FILE, function_log])
+    logger.colour_log("!proc", "Logger tests passed.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
 def test_file_system(function_log=None):
     # Test creating log files by ensuring folders and logging
@@ -108,14 +131,26 @@ def test_file_system(function_log=None):
     # Log to the actual log files
     logger.colour_log("!file", "Logging to configured log files.", log_files=list(log_files.values()))
 
-    logger.colour_log("!proc", "FileSystem tests passed.", log_files=[TEST_LOG_FILE, function_log])
+    logger.colour_log("!proc", "FileSystem tests passed.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 
-# --- 4. TESTS tuple ---
+def test_apply_border(function_log=None):
+    pattern = border_patterns.get("DOUBLE_LINE", {
+        "TOP": ["═"],
+        "LEFT": ["║"],
+        "RIGHT": ["║"], 
+        "BOTTOM": ["═"]
+    })
+
+    logger.apply_border("test", pattern, 30, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
+    logger.print_bottom_border(pattern, 30, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
+
+    logger.colour_log("!proc", "Apply border tests passed.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
 TESTS = [
     (1, "test_config_loader", test_config_loader),
     (2, "test_colour_manager", test_colour_manager),
     (3, "test_logger", test_logger),
     (4, "test_file_system", test_file_system),
+    (5, "test_apply_border", test_apply_border),
 ]
 
 # --- 5. Test runner ---
@@ -135,8 +170,7 @@ if __name__ == "__main__":
         function_log = os.path.join(TEST_LOG_FOLDER, f"{name}.log")
         try:
             logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=[TEST_LOG_FILE, function_log], log_to="both")
-            logger.print_top_border(border_pattern, 40, log_files=[TEST_LOG_FILE, function_log], log_to="both")
-            logger.colour_log("!test", "Running test", "!int", num, "!info", ":", "!proc", name, log_files=[TEST_LOG_FILE, function_log], log_to="both")
+            logger.apply_border(f"Running test {num}: {name}", border_pattern, 40, log_files=[TEST_LOG_FILE, function_log], log_to="both")
             time.sleep(1)
             func(function_log=function_log)
             logger.colour_log("!test", "Test", "!int", num, "!info", ":", "!proc", name, "!pass", "PASSED.", log_files=[TEST_LOG_FILE, function_log], log_to="both")

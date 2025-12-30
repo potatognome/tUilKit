@@ -85,6 +85,7 @@ This file merges the prior project-level guidance with the expanded guidance fil
 - Implementations are in `src/tUilKit/utils/`, `fs.py`, `sheets.py`, etc.
 - Config files: `dict/DICT_COLOURS.py`, `dict/DICT_CODES.py`, `config/*.json`.
 - Logging: supports colour, queue, multi-destination, timestamp control.
+  - **LOG_FILES Dict Practice**: Create a `LOG_FILES` dict near the start of each module: `LOG_FILES = {"SESSION": "logs/RUNTIME.log", "MASTER": "logs/MASTER.log"}`. Use `logger.colour_log("!info", msg, log_files=list(LOG_FILES.values()))` for logging to all files, or `log_files=[LOG_FILES["SESSION"]]` for specific logs. This streamlines code by reducing reliance on passing log_files in function calls when log_to="both".
 - Test framework: standardized, robust, per-test logs, rainbow/border output, `--clean` arg for log cleanup.
 
 ## Coding Guidelines for AI Agents

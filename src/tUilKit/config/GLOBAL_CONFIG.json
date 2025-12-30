@@ -2,11 +2,14 @@
     "PROJECT_NAME"              : "tUilKit",
     "PROJECT_DESCRIPTION"       : "tUilKit utility package",
     "AUTHOR"                    : "Daniel Austin <the.potato.gnome@gmail.com>",
-    "VERSION"                   : "0.5.2",
+    "VERSION"                   : "0.6.1",
 
     "LOG_FILES"                 : {
         "SESSION"               : "logs/RUNTIME.log",
-        "MASTER"                : "logs/MASTER.log"
+        "MASTER"                : "logs/MASTER.log",
+        "ERROR"                 : "logs/ERROR.log",
+        "FS"                    : "logs/FS.log",
+        "INIT"                  : "logs/INIT.log"
     },
 
     "CONFIG_FILES"              : {

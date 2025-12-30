@@ -23,8 +23,20 @@ if base_dir not in sys.path:
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
 from tUilKit.config.config import ConfigLoader
+import os
+import json
+import time
+import tempfile
+import shutil
+import argparse
+from datetime import datetime
 
 COLOUR_CONFIG_PATH = os.path.join(base_dir, "tUilKit", "config", "COLOURS.json")
+BORDER_PATTERN_PATH = os.path.join(base_dir, "tUilKit", "config", "BORDER_PATTERNS.json")
+
+with open(BORDER_PATTERN_PATH, "r") as f:
+    border_patterns = json.load(f)
+
 with open(COLOUR_CONFIG_PATH, "r") as f:
     colour_config = json.load(f)
 
@@ -36,6 +48,15 @@ file_system = FileSystem(logger)
 TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
 TEST_LOG_FILE = os.path.join(TEST_LOG_FOLDER, "test_output_output.log")
 
+# Ensure all log folders exist
+all_log_paths = list(logger.log_files.values()) + [TEST_LOG_FILE]
+for path in all_log_paths:
+    folder = os.path.dirname(path)
+    if folder:
+        file_system.validate_and_create_folder(folder, category="fs")
+default_log_files = config_loader.global_config.get("LOG_FILES", {})
+# add test log files to default_log_files
+
 if not os.path.exists(TEST_LOG_FOLDER):
     os.makedirs(TEST_LOG_FOLDER, exist_ok=True)
 
@@ -44,9 +65,14 @@ if args.clean:
     for fname in os.listdir(TEST_LOG_FOLDER):
         if fname.endswith('.log'):
             try:
-                os.remove(os.path.join(TEST_LOG_FOLDER, fname))
+                # Create backup before removing
+                base, ext = os.path.splitext(fname)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                backup_fname = f"{base}_{timestamp}.bak"
+                os.rename(os.path.join(TEST_LOG_FOLDER, fname), os.path.join(TEST_LOG_FOLDER, backup_fname))
+                print(f"Backed up {fname} to {backup_fname}")
             except Exception as e:
-                print(f"Could not remove {fname}: {e}")
+                print(f"Could not backup {fname}: {e}")
 
 # --- 3. Test variables ---
 temp_dir = tempfile.mkdtemp()
@@ -106,11 +132,31 @@ def test_file_system(function_log=None):
     if function_log:
         logger.colour_log("!proc", "FileSystem tests passed.", log_files=function_log, log_to="file")
 
+"""
+test_apply_border function to test the ConfigLoader loading the border patterns from the BORDER_PATTERNS.json file 
+whose location is specified in the GLOBAL_CONFIG.json file.
+and test the apply_border application in logger and log results to function_log and all log_files.
+"""
+def test_apply_border(function_log=None):
+    pattern = border_patterns.get("DOUBLE_LINE", {
+        "TOP": ["═"],
+        "LEFT": ["║"],
+        "RIGHT": ["║"], 
+        "BOTTOM": ["═"]
+    })
+
+    logger.apply_border("test",pattern, 30, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
+    logger.print_bottom_border(pattern, 30, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
+
+    logger.colour_log("!proc", "Apply border tests passed.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
+
+
 # --- 5. TESTS tuple ---
 TESTS = [
     (1, "test_colour_manager", test_colour_manager),
     (2, "test_logger_basic", test_logger_basic),
     (3, "test_file_system", test_file_system),
+    (4, "test_apply_border", test_apply_border)
 ]
 
 # --- 6. Test runner ---

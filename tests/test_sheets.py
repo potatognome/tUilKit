@@ -196,4 +196,4 @@ if __name__ == "__main__":
             if not passed:
                 logger.colour_log("!test", "Test", "!int", num, "!info", ":", "!proc", name, "!fail", "FAILED.", log_files=TEST_LOG_FILE)
     else:
-        logger.colour_log("DONE", "All tests passed!", log_files=TEST_LOG_FILE)
+        logger.colour_log("DONE", "All tests passed!", log_files=TEST_LOG_FILE) 
