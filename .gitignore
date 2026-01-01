@@ -14,6 +14,7 @@ env/
 # Logs and temporary files
 *.log
 *.tmp
+*.zip
 
 # System files
 .DS_Store
