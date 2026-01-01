@@ -1,6 +1,6 @@
 # Project Name
 tUilKit
-**Current version: 0.7.0**
+**Current version: 0.7.1**
 
 tUilKit (formerly utilsbase) is a modular Python toolkit providing utility functions, dictionaries, and configuration for development projects.  
 The package is structured around clear **interfaces** for logging, colour management, file system operations, and configuration loading, making it easy to extend or swap implementations.  
@@ -41,12 +41,16 @@ tUilKit is organized into three main components:
             data.py                     # Add-on - Specialized data utilities
     /docs
         tUilKit_Comprehensive_Usage_Guide.md  # Complete usage documentation
+        ColourKey_Usage_Guide.md              # Colour key addendum
+        FileSystem_Usage_Guide.md             # File system addendum
     /tests
         /testOutputLogs
-        test_module.py                  # Tests for interfaces and project folder logic
-        test_output.py                  # Tests for output/logging functions
-        test_fs_ops.py                  # Tests for file system operations
-        test_multi_category.py          # Tests for multi-category logging
+        test_config.py                # ConfigLoader + config paths
+        test_output.py                # Output/logging functions
+        test_fs_ops.py                # File system operations
+        test_multi_category.py        # Multi-category logging
+        test_interfaces.py            # Interface compliance
+        test_sheets.py                # DataFrame utilities
 ```
 
 ## Interfaces
@@ -81,7 +85,7 @@ pip install -r requirements.txt
 
 ## Usage
 
-For comprehensive usage instructions, see [`docs/tUilKit_Comprehensive_Usage_Guide.md`](docs/tUilKit_Comprehensive_Usage_Guide.md).
+For comprehensive usage instructions, see [`docs/tUilKit_Comprehensive_Usage_Guide.md`](docs/tUilKit_Comprehensive_Usage_Guide.md). For colour codes and filesystem patterns, see [`docs/ColourKey_Usage_Guide.md`](docs/ColourKey_Usage_Guide.md) and [`docs/FileSystem_Usage_Guide.md`](docs/FileSystem_Usage_Guide.md).
 
 ### Quick Start
 
@@ -114,7 +118,7 @@ config_loader = ConfigLoader()
 colour_config = config_loader.load_colour_config()
 colour_manager = ColourManager(colour_config)
 logger = Logger(colour_manager, log_files=config_loader.global_config.get("LOG_FILES", {}))
-file_system = FileSystem()
+file_system = FileSystem(logger, log_files=config_loader.global_config.get("LOG_FILES", {}))
 ```
 
 ### Key Features

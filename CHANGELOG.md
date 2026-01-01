@@ -1,6 +1,15 @@
 
 # CHANGELOG
 
+## [0.7.1] - 2026-01-01
+
+### Changed
+- Bumped version metadata to 0.7.1 across packaging files and GLOBAL_CONFIG.
+- Realigned README to factory-first initialization, corrected direct FileSystem example, and updated folder/test listings with new docs.
+
+### Added
+- Linked new ColourKey and FileSystem usage addenda from README and comprehensive guide.
+
 ## [0.7.0] - 2025-12-31
 
 ### Added
