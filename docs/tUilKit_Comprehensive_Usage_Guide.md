@@ -6,48 +6,32 @@ tUilKit is a modular Python toolkit providing utility functions for logging, col
 
 ## Quick Start: Initializing tUilKit
 
-### Basic Initialization
+### Factory Initialization (Recommended)
 
 ```python
-import os
-import json
+from tUilKit import get_logger, get_file_system, get_config_loader
+
+logger = get_logger()          # builds ConfigLoader + ColourManager under the hood
+file_system = get_file_system()  # shares logger + config
+config_loader = get_config_loader()
+```
+
+### Direct Initialization (Advanced)
+
+```python
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
 from tUilKit.config.config import ConfigLoader
 
-# 1. Load colour configuration
-COLOUR_CONFIG_PATH = os.path.join("src", "tUilKit", "config", "COLOURS.json")
-with open(COLOUR_CONFIG_PATH, "r") as f:
-    colour_config = json.load(f)
-
-# 2. Initialize ColourManager
-colour_manager = ColourManager(colour_config)
-
-# 3. Initialize Logger (optional custom log files)
-logger = Logger(colour_manager)
-
-# 4. Initialize ConfigLoader
 config_loader = ConfigLoader()
-
-# 5. Initialize FileSystem (requires logger)
-file_system = FileSystem(logger)
+colour_config = config_loader.load_colour_config()
+colour_manager = ColourManager(colour_config)
+log_files = config_loader.global_config.get("LOG_FILES", {})
+logger = Logger(colour_manager, log_files=log_files)
+file_system = FileSystem(logger, log_files=log_files)
 ```
 
-### Advanced Initialization with Custom Log Files
-
-```python
-# Custom log file locations
-custom_log_files = {
-    "SESSION": "my_logs/session.log",
-    "MASTER": "my_logs/master.log",
-    "ERROR": "my_logs/error.log",
-    "FS": "my_logs/fs.log",
-    "INIT": "my_logs/init.log"
-}
-
-logger = Logger(colour_manager, log_files=custom_log_files)
-file_system = FileSystem(logger, log_files=custom_log_files)
-```
+See also: [ColourKey Usage Guide](ColourKey_Usage_Guide.md) and [FileSystem Usage Guide](FileSystem_Usage_Guide.md) for focused references.
 
 ## The 4 Primary Interfaces
 
