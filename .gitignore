@@ -38,7 +38,3 @@ build/
 
 # Jupyter Notebook checkpoints
 .ipynb_checkpoints/
-
-# Generated documentation
-docs/
-*.pdf

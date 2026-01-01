@@ -7,6 +7,7 @@ Provides implementation of FileSystemInterface with logging support using colour
 import shutil
 import os
 from tUilKit.interfaces.file_system_interface import FileSystemInterface
+from tUilKit.config.config import config_loader
 
 class FileSystem(FileSystemInterface):
     def __init__(self, logger, log_files=None):
@@ -14,12 +15,12 @@ class FileSystem(FileSystemInterface):
         Initializes the FileSystem with a logger and optional log_files dict.
         """
         super().__init__(logger, log_files)
-        # Define log categories for selective logging
-        self.LOG_KEYS = {
+        # Load log categories from config, with fallback defaults
+        self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {
             "default": ["MASTER", "SESSION"],
             "error": ["ERROR", "SESSION", "MASTER"],
             "fs": ["MASTER", "SESSION", "FS"]
-        }
+        })
 
     def _get_log_files(self, category="default"):
         """

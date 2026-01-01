@@ -27,11 +27,6 @@ ANSI_RESET = ESCAPES['OCTAL'] + COMMANDS['RESET']
 config_loader = ConfigLoader()
 
 LOG_FILES = config_loader.global_config.get("LOG_FILES", {})
-LOG_FILES["SESSION"] = LOG_FILES.get("SESSION", "logs/RUNTIME.log")
-LOG_FILES["MASTER"] = LOG_FILES.get("MASTER", "logs/MASTER.log")
-LOG_FILES["ERROR"] = LOG_FILES.get("ERROR", "logs/ERROR.log")
-LOG_FILES["INIT"] = LOG_FILES.get("INIT", "logs/INIT.log")
-LOG_FILES["FS"] = LOG_FILES.get("FS", "logs/FS.log")
 
 class ColourManager(ColourInterface):
     def __init__(self, colour_config: dict):
@@ -139,13 +134,33 @@ class Logger(LoggerInterface):
         self.Colour_Mgr = colour_manager
         self.log_files = log_files or LOG_FILES.copy()
         self._log_queue = []
-        # Define log categories for selective logging
-        self.LOG_KEYS = {
+        # Load log categories from config, with fallback defaults
+        self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {
             "default": ["MASTER", "SESSION"],
             "error": ["ERROR", "SESSION", "MASTER"],
             "fs": ["MASTER", "SESSION", "FS"],
             "init": ["INIT", "SESSION", "MASTER"]
-        }
+        })
+        # Clean the session log on initialization to ensure it only contains the current execution
+        self._clean_session_log()
+
+    def _clean_session_log(self):
+        """
+        Clears the session log file to ensure it only contains logs from the current execution.
+        """
+        session_log = self.log_files.get("SESSION")
+        if session_log:
+            try:
+                # Ensure the log directory exists
+                log_dir = os.path.dirname(session_log)
+                if not os.path.exists(log_dir):
+                    os.makedirs(log_dir)
+                # Clear the session log file
+                with open(session_log, 'w', encoding='utf-8') as log:
+                    log.write("")  # Clear the file
+            except Exception as e:
+                # If we can't clear the session log, log to terminal only (avoid recursion)
+                print(f"Warning: Could not clear session log {session_log}: {e}")
 
     def _get_log_files(self, category):
         """

@@ -37,12 +37,12 @@ BORDER_PATTERN_PATH = os.path.join(base_dir, "tUilKit", "config", "BORDER_PATTER
 with open(BORDER_PATTERN_PATH, "r") as f:
     border_patterns = json.load(f)
 
-with open(COLOUR_CONFIG_PATH, "r") as f:
-    colour_config = json.load(f)
+# Use ConfigLoader to load colour config
+config_loader = ConfigLoader()
+colour_config = config_loader.load_colour_config()
 
 colour_manager = ColourManager(colour_config)
 logger = Logger(colour_manager)
-config_loader = ConfigLoader()
 file_system = FileSystem(logger)
 
 TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
