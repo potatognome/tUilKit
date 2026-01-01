@@ -1,6 +1,6 @@
 # Project Name
 tUilKit
-**Current version: 0.5.1**
+**Current version: 0.7.0**
 
 tUilKit (formerly utilsbase) is a modular Python toolkit providing utility functions, dictionaries, and configuration for development projects.  
 The package is structured around clear **interfaces** for logging, colour management, file system operations, and configuration loading, making it easy to extend or swap implementations.  
@@ -85,29 +85,36 @@ For comprehensive usage instructions, see [`docs/tUilKit_Comprehensive_Usage_Gui
 
 ### Quick Start
 
+#### Using Factory Functions (Recommended)
+
 ```python
-import os
-import json
-from tUilKit.utils.output import Logger, ColourManager
-from tUilKit.utils.fs import FileSystem
-from tUilKit.config.config import ConfigLoader
+from tUilKit import get_logger, get_file_system, get_config_loader
 
-# Load colour configuration
-COLOUR_CONFIG_PATH = os.path.join("src", "tUilKit", "config", "COLOURS.json")
-with open(COLOUR_CONFIG_PATH, "r") as f:
-    colour_config = json.load(f)
-
-# Initialize core components
-colour_manager = ColourManager(colour_config)
-logger = Logger(colour_manager)
-config_loader = ConfigLoader()
-file_system = FileSystem(logger)
+# Initialize all components with a single call per component
+logger = get_logger()
+fs = get_file_system()
+config = get_config_loader()
 
 # Basic logging with colours
 logger.colour_log("!info", "tUilKit initialized", "!done", "ready")
 
-# Multi-category logging (new feature)
+# Multi-category logging
 logger.colour_log("!info", "Complex operation", category=["fs", "error"])
+```
+
+#### Direct Initialization (Advanced)
+
+```python
+from tUilKit.utils.output import Logger, ColourManager
+from tUilKit.utils.fs import FileSystem
+from tUilKit.config.config import ConfigLoader
+
+# Initialize core components manually
+config_loader = ConfigLoader()
+colour_config = config_loader.load_colour_config()
+colour_manager = ColourManager(colour_config)
+logger = Logger(colour_manager, log_files=config_loader.global_config.get("LOG_FILES", {}))
+file_system = FileSystem()
 ```
 
 ### Key Features

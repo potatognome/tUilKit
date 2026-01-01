@@ -1,6 +1,32 @@
 
 # CHANGELOG
 
+## [0.7.0] - 2025-12-31
+
+### Added
+- **Factory functions** for simplified component initialization: `get_logger()`, `get_config_loader()`, `get_colour_manager()`, and `get_file_system()`.
+- **Module-level singleton pattern**: Factory functions maintain internal singleton instances, ensuring components are created once and reused throughout the application lifecycle.
+- **reset_factories() utility**: For testing purposes, allows complete reset of all singleton instances.
+- **factories.py module**: New `src/tUilKit/factories.py` with comprehensive factory implementations and docstrings.
+- **Top-level exports**: Updated `src/tUilKit/__init__.py` to export all factory functions for convenient top-level imports.
+
+### Changed
+- **README quick-start guide**: Now features factory functions as the recommended approach with direct initialization as an advanced alternative.
+- **Version unified**: Synchronized `setup.py` and `pyproject.toml` versions to 0.7.0.
+
+### Benefits
+- **Zero-boilerplate initialization**: Single import and function call replaces manual config loading, colour manager creation, and logger instantiation.
+- **Automatic dependency injection**: Factory functions handle all internal wiring transparently.
+- **Backwards compatible**: Direct initialization still fully supported for advanced use cases.
+
+### Example
+```python
+from tUilKit import get_logger
+
+logger = get_logger()
+logger.colour_log("!info", "App started")
+```
+
 ## [0.6.1] - 2025-12-30
 
 ### Added
