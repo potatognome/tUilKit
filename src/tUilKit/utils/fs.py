@@ -6,6 +6,8 @@ Provides implementation of FileSystemInterface with logging support using colour
 
 import shutil
 import os
+import sys
+from pathlib import Path
 from tUilKit.interfaces.file_system_interface import FileSystemInterface
 from tUilKit.config.config import config_loader
 
@@ -45,9 +47,10 @@ class FileSystem(FileSystemInterface):
         Logs the action using colour keys: !try for attempt, !create for action, !path for the path, !pass for success.
         """
         log_files = self._get_log_files(category)
+        coloured_path = colourize_path(folder_path, self.logger.Colour_Mgr) if (self.logger and folder_path) else folder_path
         if not os.path.exists(folder_path):
             if self.logger and log:
-                self.logger.colour_log("!try", "Attempting to", "!create", "create folder:", "!path", folder_path, log_files=log_files, log_to=log_to, end="..... ")
+                self.logger.colour_log("!try", "Attempting to", "!create", "create folder:", "!path", coloured_path, log_files=log_files, log_to=log_to, end="..... ")
             try:
                 os.makedirs(folder_path, exist_ok=True)
                 if self.logger and log:
@@ -67,6 +70,7 @@ class FileSystem(FileSystemInterface):
         for root, dirs, files in os.walk(path, topdown=False):
             for dir in dirs:
                 dir_path = os.path.join(root, dir)
+                coloured_path = colourize_path(dir_path, self.logger.Colour_Mgr) if (self.logger and dir_path) else dir_path
                 if not os.listdir(dir_path):
                     try:
                         os.rmdir(dir_path)  
@@ -74,7 +78,7 @@ class FileSystem(FileSystemInterface):
                         if self.logger and log:
                             self.logger.log_exception("!error", "Could not remove folder: ", e, log_files=self._get_log_files("error"))
                     if self.logger and log:
-                        self.logger.colour_log("!pass", "Removed empty folder:", "!path", dir_path, log_files=log_files)
+                        self.logger.colour_log("!pass", "Removed empty folder:", "!path", coloured_path, log_files=log_files)
 
     def get_all_files(self, folder: str) -> list[str]:
         """
@@ -117,19 +121,21 @@ class FileSystem(FileSystemInterface):
             counter += 1
             if max_count and counter > max_count:
                 if self.logger and log:
+                    coloured_oldest_dir = colourize_path(os.path.dirname(oldest_file), self.logger.Colour_Mgr) if self.logger else os.path.dirname(oldest_file)
                     self.logger.colour_log(
                         "!warn",
                         "Max count reached, returning oldest file:",
-                        "!path", os.path.dirname(oldest_file),
+                        "!path", coloured_oldest_dir,
                         "!file", os.path.basename(oldest_file),
                         log_files=log_files
                     )
                 return oldest_file
         if self.logger and log:
+            coloured_new_dir = colourize_path(os.path.dirname(new_fullfilepath), self.logger.Colour_Mgr) if self.logger else os.path.dirname(new_fullfilepath)
             self.logger.colour_log(
                 "!done",
                 "No-overwrite filename generated:",
-                "!path", os.path.dirname(new_fullfilepath),
+                "!path", coloured_new_dir,
                 "!file", os.path.basename(new_fullfilepath),
                 log_files=log_files
             )
@@ -145,12 +151,14 @@ class FileSystem(FileSystemInterface):
             if os.path.exists(full_pathname):
                 shutil.copy2(full_pathname, backup_full_pathname)
                 if self.logger and log:
-                    self.logger.colour_log("!done", "Backup created:", "!path", os.path.dirname(backup_full_pathname), "!file", os.path.basename(backup_full_pathname), log_files=log_files)
+                    coloured_backup_dir = colourize_path(os.path.dirname(backup_full_pathname), self.logger.Colour_Mgr) if self.logger else os.path.dirname(backup_full_pathname)
+                    self.logger.colour_log("!done", "Backup created:", "!path", coloured_backup_dir, "!file", os.path.basename(backup_full_pathname), log_files=log_files)
                 try:
                     with open(full_pathname, 'w') as file:
                         file.write('')
                     if self.logger and log:
-                        self.logger.colour_log("!done", "File replaced:", "!path", os.path.dirname(full_pathname), "!file", os.path.basename(full_pathname), log_files=log_files)
+                        coloured_full_dir = colourize_path(os.path.dirname(full_pathname), self.logger.Colour_Mgr) if self.logger else os.path.dirname(full_pathname)
+                        self.logger.colour_log("!done", "File replaced:", "!path", coloured_full_dir, "!file", os.path.basename(full_pathname), log_files=log_files)
                 except Exception as e:
                     if self.logger and log:
                         self.logger.log_exception("!error", "Generated Exception ", e, log_files=self._get_log_files("error"))
@@ -174,3 +182,62 @@ class FileSystem(FileSystemInterface):
         for char, replacement in invalid_chars.items():
             new_filename = new_filename.replace(char, replacement)
         return new_filename
+
+
+def normalize_path(path: str, style: str = "auto") -> str:
+    """Normalize a filesystem path for cross-platform display/use.
+
+    Args:
+        path: Input path (any separator mix).
+        style: "auto" (platform default), "posix" (forward slashes), or "windows" (backslashes).
+
+    Returns:
+        Normalized path string.
+    """
+    if not path:
+        return ""
+
+    p = Path(path)
+    if style == "posix":
+        return p.as_posix()
+    if style == "windows":
+        return str(p).replace("/", "\\")
+
+    # auto: honor current platform default separator
+    return str(p)
+
+
+def detect_os() -> str:
+    """Return normalized OS name: "Windows", "Linux", or "Darwin" (macOS).
+
+    Uses os.name/sys.platform to avoid platform module import. Intended for light
+    branching in path display or logging.
+    """
+    # Fast path based on os.name
+    if os.name == "nt":
+        return "Windows"
+    # sys.platform covers linux/darwin explicitly
+    plat = sys.platform
+    if plat.startswith("linux"):
+        return "Linux"
+    if plat == "darwin":
+        return "Darwin"
+    # Fallback to raw value
+    return plat
+
+
+def colourize_path(path: str, colour_manager, style: str = "auto") -> str:
+    """Normalize a path and render it with colour manager's colour_path.
+
+    Args:
+        path: input filesystem path
+        colour_manager: instance providing colour_path()
+        style: normalization style passed to normalize_path
+
+    Returns:
+        Colour-formatted path string (or empty string if path is falsy).
+    """
+    if not path:
+        return ""
+    normalized = normalize_path(path, style=style)
+    return colour_manager.colour_path(normalized)

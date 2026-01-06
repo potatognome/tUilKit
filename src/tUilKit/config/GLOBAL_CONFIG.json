@@ -2,7 +2,7 @@
     "PROJECT_NAME"              : "tUilKit",
     "PROJECT_DESCRIPTION"       : "tUilKit utility package",
     "AUTHOR"                    : "Daniel Austin <the.potato.gnome@gmail.com>",
-    "VERSION"                   : "0.7.1",
+    "VERSION"                   : "0.8.0",
 
     "CONFIG_FILES"              : {
         "COLOURS"               : "src/tUilKit/config/COLOURS.json",

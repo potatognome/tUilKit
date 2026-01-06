@@ -52,7 +52,6 @@ def get_logger():
         _logger = Logger(colour_manager, log_files=log_files)
     return _logger
 
-
 def get_file_system():
     """
     Get or create the singleton FileSystem instance.
@@ -61,7 +60,6 @@ def get_file_system():
     if _file_system is None:
         _file_system = FileSystem()
     return _file_system
-
 
 def reset_factories():
     """

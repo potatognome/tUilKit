@@ -226,6 +226,7 @@
         "CYAN"          :"0;255;255m",
         "PURPLE"        :"160;32;240m",
         "MAGENTA"       :"255;0;255m",
+        
         "# LIGHTS"      :"",
         "PINK"          :"255;135;170m",
         "TANGERINE"     :"255;150;10m",
@@ -244,6 +245,7 @@
         "SALMON"        :"255;160;160m",
         "HONEY"         :"255;220;85m",
         "SEAFOAM GREEN" :"160;255;180m",
+
         "# DARKS"       :"",
         "DARK RED"      :"135;0;0m",
         "DARK ORANGE"   :"135;60;0m",
@@ -259,6 +261,7 @@
         "MIDNIGHT BLUE" :"25;25;112m",
         "PLUM"          :"142;69;133m",
         "WINE"          :"114;47;55m",  
+
         "# BROWNS"      :"",
         "MAHOGANY"      :"60;25;5m",
         "BROWN"         :"120;50;10m",
@@ -271,6 +274,7 @@
         "OCHRE"         :"204;119;34m",
         "BEIGE"         :"245;245;220m",
         "BRONZE"        :"205;127;50m",  
+
         "# SHADES"      :"",
         "BLACK"         :"0;0;0m",
         "CHARCOAL"      :"65;65;65m",

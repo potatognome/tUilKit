@@ -1,6 +1,6 @@
 # Project Name
 tUilKit
-**Current version: 0.7.1**
+**Current version: 0.8.0**
 
 tUilKit (formerly utilsbase) is a modular Python toolkit providing utility functions, dictionaries, and configuration for development projects.  
 The package is structured around clear **interfaces** for logging, colour management, file system operations, and configuration loading, making it easy to extend or swap implementations.  

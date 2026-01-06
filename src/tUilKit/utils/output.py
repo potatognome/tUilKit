@@ -37,7 +37,12 @@ class ColourManager(ColourInterface):
                 fg, bg = value.split('|', 1)
             else:
                 fg = value
-                bg = 'BLACK'
+                # If key is a color name (like "BLUE"), use the color for BG too
+                # If key is a config key (like "!info"), default BG to BLACK
+                if key.startswith('!') or key in ['ARGS', 'COMMAND', 'CMD', 'TRY', 'TEST', 'PROC', 'DONE', 'PASSED', 'WARN', 'FAIL', 'ERROR', 'OUTPUT', 'INT', 'TEXT', 'FLOAT', 'CALC', 'DATA', 'LIST', 'PATH', 'DRIVE', 'BASEFOLDER', 'MIDFOLDER', 'THISFOLDER', 'FILE', 'DATE', 'TIME', 'LOAD', 'SAVE', 'CREATE', 'DELETE', 'INFO', 'RESET']:
+                    bg = 'BLACK'
+                else:
+                    bg = value  # Use same color for background as foreground
             if fg in RGB:
                 self.ANSI_FG_COLOUR_SET[key] = f"\033[38;2;{RGB[fg]}"
             if bg in RGB:
@@ -45,10 +50,22 @@ class ColourManager(ColourInterface):
         self.ANSI_FG_COLOUR_SET['RESET'] = ANSI_RESET
 
     def get_fg_colour(self, colour_code: str) -> str:
-        return self.ANSI_FG_COLOUR_SET.get(colour_code, "\033[38;2;190;190;190m")
+        # Check if it's a config key first (e.g., !info, !proc)
+        if colour_code in self.ANSI_FG_COLOUR_SET:
+            return self.ANSI_FG_COLOUR_SET[colour_code]
+        # Otherwise try to build from RGB dict directly (e.g., RED, BLUE, GREEN)
+        elif colour_code in RGB:
+            return f"\033[38;2;{RGB[colour_code]}"
+        return "\033[38;2;190;190;190m"  # default gray
 
     def get_bg_colour(self, colour_code: str) -> str:
-        return self.ANSI_BG_COLOUR_SET.get(colour_code, "\033[48;2;0;0;0m")
+        # Check if it's a config key first (e.g., !info, !proc)
+        if colour_code in self.ANSI_BG_COLOUR_SET:
+            return self.ANSI_BG_COLOUR_SET[colour_code]
+        # Otherwise try to build from RGB dict directly (e.g., RED, BLUE, GREEN)
+        elif colour_code in RGB:
+            return f"\033[48;2;{RGB[colour_code]}"
+        return "\033[48;2;0;0;0m"  # default black
 
     def strip_ansi(self, fstring: str) -> str:
         import re
@@ -66,19 +83,28 @@ class ColourManager(ColourInterface):
         FG_RESET = "\033[38;2;190;190;190m"
         BG_RESET = "\033[49m"
         current_fg = FG_RESET
-        current_bg = ""
+        current_bg = ""  # Start with no background (not reset code)
+        
         for i, arg in enumerate(args):
             if isinstance(arg, list):
                 arg = ', '.join(map(str, arg))
             else:
                 arg = str(arg)
+            # Check if it's a color key from config (e.g., !info, !proc)
             if arg in self.ANSI_FG_COLOUR_SET:
                 current_fg = self.ANSI_FG_COLOUR_SET[arg]
-                current_bg = self.ANSI_BG_COLOUR_SET.get(arg, "")
+                # Check if this color key has a background defined
+                if arg in self.ANSI_BG_COLOUR_SET:
+                    current_bg = self.ANSI_BG_COLOUR_SET[arg]
+            # Check if it's a raw color name (e.g., RED, BLUE, GREEN)
+            elif arg in RGB:
+                current_fg = self.get_fg_colour(arg)
             elif arg.startswith('BG_'):
+                # Set background color and keep it active
                 current_bg = self.get_bg_colour(arg[3:])
             else:
-                result += f"{current_bg}{current_fg}{arg}"
+                # Apply current colors to text
+                result += f"{current_fg}{current_bg}{arg}"
                 if i != len(args) - 1:
                     result += separator
         result += FG_RESET + BG_RESET
@@ -202,7 +228,9 @@ class Logger(LoggerInterface):
         
         if time_stamp:
             date, time = self.split_time_string(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
-            message = f"{date} {time} {message}"
+            # Apply colored timestamp with proper reset before message
+            timestamp_str = self.Colour_Mgr.colour_fstr("!date", date, "!time", time)
+            message = f"{timestamp_str} {message}"
         
         if log_to in ("file", "both") and log_files:
             for log_file in log_files:
@@ -293,6 +321,34 @@ class Logger(LoggerInterface):
             log_files=log_files,
             log_to=log_to)
 
+    def _apply_gradient(self, text: str, fg_gradient=None, bg_gradient=None, rainbow=False) -> list:
+        """
+        Helper to build colour_fstr args for character-by-character gradient.
+        Returns list of args ready for colour_fstr.
+        """
+        if rainbow:
+            rainbow_colours = [
+                'RED', 'CRIMSON', 'ORANGE', 'CORAL', 'GOLD',
+                'YELLOW', 'CHARTREUSE', 'GREEN', 'CYAN',
+                'BLUE', 'INDIGO', 'VIOLET', 'MAGENTA'
+            ]
+            fg_gradient = rainbow_colours + rainbow_colours[::-1][1:-1]
+        
+        args = []
+        if fg_gradient or bg_gradient:
+            text_len = len(text)
+            for i, char in enumerate(text):
+                if fg_gradient:
+                    color_idx = int((i / text_len) * len(fg_gradient)) if text_len > 1 else 0
+                    args.append(fg_gradient[min(color_idx, len(fg_gradient) - 1)])
+                if bg_gradient:
+                    bg_idx = int((i / text_len) * len(bg_gradient)) if text_len > 1 else 0
+                    args.append(f"BG_{bg_gradient[min(bg_idx, len(bg_gradient) - 1)]}")
+                args.append(char)
+        else:
+            args.append(text)
+        return args
+
     def print_rainbow_row(self, pattern="X-O-", spacer=0, log_files=None, end="\n", log_to="both"):
         bright_colours = [
             'RED', 'CRIMSON', 'ORANGE', 'CORAL', 'GOLD',
@@ -305,29 +361,167 @@ class Logger(LoggerInterface):
             self.log_message(self.Colour_Mgr.colour_fstr(colour, pattern), log_files=log_files, end="", log_to=log_to, time_stamp=False)
         self.log_message(self.Colour_Mgr.colour_fstr("RED", f"{pattern}"[0]), log_files=log_files, end=end, log_to=log_to, time_stamp=False)
 
-    def print_top_border(self, pattern, length, index=0, log_files=None, border_colour='!proc', log_to: str = "both"):
-        top = pattern['TOP'][index] * (length // len(pattern['TOP'][index]))
-        self.colour_log(border_colour, f" {top}", category="default", log_files=log_files, log_to=log_to)
+    def print_top_border(self, pattern, length, index=0, log_files=None, border_colour='!proc', border_fg_gradient=None, border_bg_gradient=None, border_rainbow=False, log_to: str = "both"):
+        """
+        Print top border with optional gradient or rainbow coloring.
+        
+        Args:
+            border_colour: Single colour key for border (default, used if no gradient/rainbow)
+            border_fg_gradient: List of colour keys for border foreground gradient
+            border_bg_gradient: List of colour keys for border background gradient
+            border_rainbow: If True, apply rainbow gradient to border (overrides border_fg_gradient)
+        """
+        top_pattern = pattern['TOP'][index] if isinstance(pattern['TOP'], list) else pattern['TOP']
+        top = top_pattern * (length // len(top_pattern))
+        
+        if border_rainbow or border_fg_gradient or border_bg_gradient:
+            gradient_args = self._apply_gradient(top, fg_gradient=border_fg_gradient, bg_gradient=border_bg_gradient, rainbow=border_rainbow)
+            coloured_message = self.Colour_Mgr.colour_fstr(*gradient_args, separator="")
+            self.log_message(" " + coloured_message, log_files=log_files, log_to=log_to, time_stamp=True)
+        else:
+            self.colour_log(border_colour, f" {top}", category="default", log_files=log_files, log_to=log_to)
 
-    def print_text_line(self, text, pattern, length, index=0, log_files=None, border_colour='!proc', text_colour='!proc', log_to: str = "both"):
-        left = pattern['LEFT'][index]
-        right = pattern['RIGHT'][index]
+    def print_text_line(self, text, pattern, length, index=0, log_files=None, border_colour='!proc', text_colour='!proc', border_fg_gradient=None, border_bg_gradient=None, border_rainbow=False, text_fg_gradient=None, text_bg_gradient=None, text_rainbow=False, justify='left', log_to: str = "both"):
+        """
+        Print text line with optional gradient or rainbow coloring on borders and text.
+        
+        Args:
+            border_colour: Single colour key for borders (default, used if no gradient/rainbow)
+            text_colour: Single colour key for text (default, used if no gradient/rainbow)
+            border_fg_gradient: List of colour keys for border foreground gradient
+            border_bg_gradient: List of colour keys for border background gradient
+            border_rainbow: If True, apply rainbow gradient to borders
+            text_fg_gradient: List of colour keys for text foreground gradient
+            text_bg_gradient: List of colour keys for text background gradient
+            text_rainbow: If True, apply rainbow gradient to text
+            justify: Text alignment - 'left', 'center', or 'right' (default: 'left')
+        """
+        left = pattern['LEFT'][index] if isinstance(pattern['LEFT'], list) else pattern['LEFT']
+        right = pattern['RIGHT'][index] if isinstance(pattern['RIGHT'], list) else pattern['RIGHT']
         inner_text_length = len(left) + len(text) + len(right)
-        trailing_space_length = length - inner_text_length - 2
-        text_line_args = [border_colour, left, text_colour, text, f"{' ' * trailing_space_length}", border_colour, right]
-        self.colour_log(*text_line_args, category="default", log_files=log_files, log_to=log_to)
+        total_space = length - inner_text_length
+        
+        # Calculate spacing based on justification
+        if justify == 'center':
+            leading_space = total_space // 2
+            trailing_space = total_space - leading_space
+        elif justify == 'right':
+            leading_space = total_space
+            trailing_space = 0
+        else:  # 'left' or default
+            leading_space = 0
+            trailing_space = total_space
+        
+        # Check if we need gradients for border or text
+        border_has_gradient = border_rainbow or border_fg_gradient or border_bg_gradient
+        text_has_gradient = text_rainbow or text_fg_gradient or text_bg_gradient
+        
+        if border_has_gradient or text_has_gradient:
+            # Build gradient components
+            if border_has_gradient:
+                left_args = self._apply_gradient(left, fg_gradient=border_fg_gradient, bg_gradient=border_bg_gradient, rainbow=border_rainbow)
+                right_args = self._apply_gradient(right, fg_gradient=border_fg_gradient, bg_gradient=border_bg_gradient, rainbow=border_rainbow)
+            else:
+                left_args = [border_colour, left]
+                right_args = [border_colour, right]
+            
+            if text_has_gradient:
+                text_args = self._apply_gradient(text, fg_gradient=text_fg_gradient, bg_gradient=text_bg_gradient, rainbow=text_rainbow)
+            else:
+                text_args = [text_colour, text]
+            
+            # Build complete message
+            complete_args = [*left_args, f"{' ' * leading_space}", *text_args, f"{' ' * trailing_space}", *right_args]
+            coloured_message = self.Colour_Mgr.colour_fstr(*complete_args, separator="")
+            self.log_message(" " + coloured_message, log_files=log_files, log_to=log_to, time_stamp=True)
+        else:
+            # Simple color version
+            text_with_spaces = f"{' ' * leading_space}{text}{' ' * trailing_space}"
+            text_line_args = [border_colour, left, text_colour, text_with_spaces, border_colour, right]
+            self.colour_log(*text_line_args, category="default", log_files=log_files, log_to=log_to)
 
-    def print_bottom_border(self, pattern, length, index=0, log_files=None, border_colour='!proc', log_to: str = "both"):
-        bottom = pattern['BOTTOM'][index] * (length // len(pattern['BOTTOM'][index]))
-        self.colour_log(border_colour, f" {bottom}", category="default", log_files=log_files, log_to=log_to)
+    def print_bottom_border(self, pattern, length, index=0, log_files=None, border_colour='!proc', border_fg_gradient=None, border_bg_gradient=None, border_rainbow=False, log_to: str = "both"):
+        """
+        Print bottom border with optional gradient or rainbow coloring.
+        
+        Args:
+            border_colour: Single colour key for border (default, used if no gradient/rainbow)
+            border_fg_gradient: List of colour keys for border foreground gradient
+            border_bg_gradient: List of colour keys for border background gradient
+            border_rainbow: If True, apply rainbow gradient to border
+        """
+        bottom_pattern = pattern['BOTTOM'][index] if isinstance(pattern['BOTTOM'], list) else pattern['BOTTOM']
+        bottom = bottom_pattern * (length // len(bottom_pattern))
+        
+        if border_rainbow or border_fg_gradient or border_bg_gradient:
+            gradient_args = self._apply_gradient(bottom, fg_gradient=border_fg_gradient, bg_gradient=border_bg_gradient, rainbow=border_rainbow)
+            coloured_message = self.Colour_Mgr.colour_fstr(*gradient_args, separator="")
+            self.log_message(" " + coloured_message, log_files=log_files, log_to=log_to, time_stamp=True)
+        else:
+            self.colour_log(border_colour, f" {bottom}", category="default", log_files=log_files, log_to=log_to)
 
-    def apply_border(self, text, pattern, total_length=None, index=0, log_files=None, border_colour='!proc', text_colour='!proc', log_to: str = "both"):
+    def apply_border(self, text, pattern, total_length=None, index=0, log_files=None, border_colour='!proc', text_colour='!proc', border_fg_gradient=None, border_bg_gradient=None, border_rainbow=False, text_fg_gradient=None, text_bg_gradient=None, text_rainbow=False, justify='left', log_to: str = "both"):
+        """
+        Apply border with optional gradient or rainbow coloring on borders and text.
+        
+        Args:
+            border_colour: Single colour key for borders (default)
+            text_colour: Single colour key for text (default)
+            border_fg_gradient: List of colour keys for border foreground gradient (e.g., ['RED', 'YELLOW', 'GREEN'])
+            border_bg_gradient: List of colour keys for border background gradient
+            border_rainbow: If True, apply rainbow gradient to borders
+            text_fg_gradient: List of colour keys for text foreground gradient
+            text_bg_gradient: List of colour keys for text background gradient
+            text_rainbow: If True, apply rainbow gradient to text
+            justify: Text alignment - 'left', 'center', or 'right' (default: 'left')
+        """
         # Exposed for external use in tUilKit: Use for highlighting header text in the terminal with borders.
-        inner_text_length = len(pattern['LEFT'][index]) + len(text) + len(pattern['RIGHT'][index])
+        left = pattern['LEFT'][index] if isinstance(pattern['LEFT'], list) else pattern['LEFT']
+        right = pattern['RIGHT'][index] if isinstance(pattern['RIGHT'], list) else pattern['RIGHT']
+        inner_text_length = len(left) + len(text) + len(right)
         if total_length and total_length > inner_text_length:
             length = total_length
         else:
             length = inner_text_length
-        self.print_top_border(pattern, length, index, log_files=log_files, border_colour=border_colour, log_to=log_to)
-        self.print_text_line(text, pattern, length, index, log_files=log_files, border_colour=border_colour, text_colour=text_colour, log_to=log_to)
-        self.print_bottom_border(pattern, length, index, log_files=log_files, border_colour=border_colour, log_to=log_to)
+        self.print_top_border(pattern, length, index, log_files=log_files, border_colour=border_colour, border_fg_gradient=border_fg_gradient, border_bg_gradient=border_bg_gradient, border_rainbow=border_rainbow, log_to=log_to)
+        self.print_text_line(text, pattern, length, index, log_files=log_files, border_colour=border_colour, text_colour=text_colour, border_fg_gradient=border_fg_gradient, border_bg_gradient=border_bg_gradient, border_rainbow=border_rainbow, text_fg_gradient=text_fg_gradient, text_bg_gradient=text_bg_gradient, text_rainbow=text_rainbow, justify=justify, log_to=log_to)
+        self.print_bottom_border(pattern, length, index, log_files=log_files, border_colour=border_colour, border_fg_gradient=border_fg_gradient, border_bg_gradient=border_bg_gradient, border_rainbow=border_rainbow, log_to=log_to)
+
+    def apply_border_multiline(self, text_lines, pattern, total_length=None, index=0, log_files=None, border_colour='!proc', text_colour='!proc', border_fg_gradient=None, border_bg_gradient=None, border_rainbow=False, text_fg_gradient=None, text_bg_gradient=None, text_rainbow=False, justify='left', log_to: str = "both"):
+        """
+        Apply border around multiple lines of text with optional gradient or rainbow coloring.
+        
+        Args:
+            text_lines: List of text strings, one per line
+            border_colour: Single colour key for borders (default)
+            text_colour: Single colour key for text (default)
+            border_fg_gradient: List of colour keys for border foreground gradient
+            border_bg_gradient: List of colour keys for border background gradient
+            border_rainbow: If True, apply rainbow gradient to borders
+            text_fg_gradient: List of colour keys for text foreground gradient
+            text_bg_gradient: List of colour keys for text background gradient
+            text_rainbow: If True, apply rainbow gradient to text
+            justify: Text alignment - 'left', 'center', or 'right' (default: 'left')
+        """
+        if not text_lines:
+            return
+        
+        # Calculate length based on longest line
+        left = pattern['LEFT'][index] if isinstance(pattern['LEFT'], list) else pattern['LEFT']
+        right = pattern['RIGHT'][index] if isinstance(pattern['RIGHT'], list) else pattern['RIGHT']
+        
+        if total_length:
+            length = total_length
+        else:
+            max_text_len = max(len(line) for line in text_lines)
+            length = len(left) + max_text_len + len(right)
+        
+        # Print top border
+        self.print_top_border(pattern, length, index, log_files=log_files, border_colour=border_colour, border_fg_gradient=border_fg_gradient, border_bg_gradient=border_bg_gradient, border_rainbow=border_rainbow, log_to=log_to)
+        
+        # Print each text line
+        for line in text_lines:
+            self.print_text_line(line, pattern, length, index, log_files=log_files, border_colour=border_colour, text_colour=text_colour, border_fg_gradient=border_fg_gradient, border_bg_gradient=border_bg_gradient, border_rainbow=border_rainbow, text_fg_gradient=text_fg_gradient, text_bg_gradient=text_bg_gradient, text_rainbow=text_rainbow, justify=justify, log_to=log_to)
+        
+        # Print bottom border
+        self.print_bottom_border(pattern, length, index, log_files=log_files, border_colour=border_colour, border_fg_gradient=border_fg_gradient, border_bg_gradient=border_bg_gradient, border_rainbow=border_rainbow, log_to=log_to)

@@ -1,6 +1,30 @@
 
 # CHANGELOG
 
+## [0.8.0] - 2026-01-06
+
+### Added
+- **Path Helper Functions**: New `normalize_path()`, `colourize_path()`, and `detect_os()` functions in FileSystem for cross-platform path handling and colored path display in logs.
+- **Multi-Color Border Gradients**: Border rendering now supports separate gradient options for borders and text with `border_fg_gradient`, `border_bg_gradient`, `border_rainbow`, `text_fg_gradient`, `text_bg_gradient`, and `text_rainbow` parameters.
+- **Multiline Border Support**: New `apply_border_multiline()` method wraps multiple text lines in borders with full gradient support.
+- **Background Color Support**: Full background color rendering with `BG_` prefix (e.g., `BG_BLUE`, `BG_RED`) now works correctly in terminal output.
+- **Border Pattern List Format**: BORDER_PATTERNS.json now supports lists for TOP/LEFT/RIGHT/BOTTOM patterns enabling multi-character borders.
+- **Comprehensive Border Tests**: Added 18 test cases in test_output.py covering all gradient combinations, justification options, and multiline rendering.
+
+### Changed
+- **Background Color Initialization**: ColourManager constructor now correctly uses color values for backgrounds when raw color names (BLUE, RED, etc.) have no `|` separator, instead of defaulting to BLACK. Config keys like `!info` still get BLACK backgrounds as intended.
+- **Consistent Timestamp Coloring**: `log_message()` now applies colored timestamps using `!date` and `!time` config keys with proper ANSI resets, ensuring all timestamps render consistently.
+- **FileSystem Logging Integration**: All FileSystem methods (validate_and_create_folder, remove_empty_folders, no_overwrite, backup_and_replace) now use `colourize_path()` for colored path display in logs.
+
+### Fixed
+- **Background Colors Not Displaying**: Resolved issue where background colors generated correct ANSI codes but weren't rendering due to ANSI_BG_COLOUR_SET storing BLACK for all raw color names.
+- **Inconsistent Timestamp Colors**: Fixed timestamps appearing with and without colors by ensuring `log_message()` consistently applies color codes via `colour_fstr()`.
+
+### Technical Details
+- RGB dictionary values include 'm' terminator (e.g., '255;0;0m').
+- ANSI codes: Foreground `\033[38;2;R;G;Bm`, Background `\033[48;2;R;G;Bm`, Reset FG `39m`, Reset BG `49m`.
+- Border methods support all three justification options: left, center, right.
+
 ## [0.7.1] - 2026-01-01
 
 ### Changed

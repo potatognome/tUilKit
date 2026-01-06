@@ -8,6 +8,7 @@ import json
 import time
 import tempfile
 import shutil
+from datetime import datetime
 
 # --- 1. Command line argument for log cleanup ---
 import argparse
@@ -17,29 +18,27 @@ args, unknown = parser.parse_known_args()
 
 # --- 2. Imports and initialization ---
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
 from tUilKit.config.config import ConfigLoader
-import os
-import json
-import time
-import tempfile
-import shutil
-import argparse
-from datetime import datetime
+
+# Change to project root before initializing ConfigLoader so paths resolve correctly
+original_cwd = os.getcwd()
+os.chdir(project_root)
 
 COLOUR_CONFIG_PATH = os.path.join(base_dir, "tUilKit", "config", "COLOURS.json")
-BORDER_PATTERN_PATH = os.path.join(base_dir, "tUilKit", "config", "BORDER_PATTERNS.json")
-
-with open(BORDER_PATTERN_PATH, "r") as f:
-    border_patterns = json.load(f)
 
 # Use ConfigLoader to load colour config
 config_loader = ConfigLoader()
 colour_config = config_loader.load_colour_config()
+border_patterns_config = config_loader.load_border_patterns_config()
+
+# Restore original working directory
+os.chdir(original_cwd)
 
 colour_manager = ColourManager(colour_config)
 logger = Logger(colour_manager)
@@ -136,19 +135,179 @@ def test_file_system(function_log=None):
 test_apply_border function to test the ConfigLoader loading the border patterns from the BORDER_PATTERNS.json file 
 whose location is specified in the GLOBAL_CONFIG.json file.
 and test the apply_border application in logger and log results to function_log and all log_files.
+Tests multiple color options: single color, foreground gradient, background gradient, rainbow, separate border/text gradients, and multiline borders.
 """
 def test_apply_border(function_log=None):
-    pattern = border_patterns.get("DOUBLE_LINE", {
-        "TOP": ["═"],
-        "LEFT": ["║"],
-        "RIGHT": ["║"], 
-        "BOTTOM": ["═"]
+    # Use BORDER_PATTERNS from config file
+    pattern = border_patterns_config.get("BORDER_PATTERNS", {
+        "TOP": ["<>"],
+        "LEFT": ["|>"],
+        "RIGHT": ["<|"], 
+        "BOTTOM": ["<>"]
     })
+    
+    log_targets = [TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE]
+    
+    # Test 1: Single color border (default)
+    logger.colour_log("!info", "Test 1: Single color border", log_files=log_targets)
+    logger.apply_border("Default Single Color", pattern, 50, index=0, border_colour='!proc', text_colour='!info', log_files=log_targets)
+    
+    # Test 1b: Direct background color tests
+    logger.colour_log("!info", "Test 1b: Direct BG color tests", log_files=log_targets)
+    logger.colour_log("BG_BLUE", "Blue background", log_files=log_targets)
+    logger.colour_log("BG_RED", "Red background", log_files=log_targets)
+    logger.colour_log("BG_GREEN", "Green background", log_files=log_targets)
+    logger.colour_log("YELLOW", "BG_MAGENTA", "Yellow text on magenta background", log_files=log_targets)
+    
+    # Test 1c: colour_fstr direct test
+    logger.colour_log("!info", "Test 1c: colour_fstr BG test", log_files=log_targets)
+    test_msg = colour_manager.colour_fstr("BG_CYAN", "Cyan BG test")
+    logger.log_message(test_msg, log_files=log_targets, time_stamp=True, log_to="both")
+    test_msg2 = colour_manager.colour_fstr("RED", "BG_YELLOW", "Red text", "on yellow BG")
+    logger.log_message(test_msg2, log_files=log_targets, time_stamp=True, log_to="both")
+    
+    # Test 1d: Debug raw ANSI codes
+    logger.colour_log("!info", "Test 1d: Raw ANSI debug", log_files=log_targets)
+    from tUilKit.dict.DICT_COLOURS import RGB
+    print(f"RGB['BLUE'] = {RGB['BLUE']}")
+    print(f"ANSI_BG_COLOUR_SET['BLUE'] = {repr(colour_manager.ANSI_BG_COLOUR_SET['BLUE'])}")
+    bg_result = colour_manager.get_bg_colour('BLUE')
+    print(f"get_bg_colour('BLUE') = {repr(bg_result)}")
+    debug_msg = colour_manager.colour_fstr("BG_BLUE", "Background test")
+    print(f"Raw ANSI output: {repr(debug_msg)}")
+    logger.log_message(debug_msg, log_files=log_targets, time_stamp=True, log_to="both")
+    
+    # Test 2: Border foreground gradient only
+    logger.colour_log("!info", "Test 2: Border FG gradient", log_files=log_targets)
+    logger.apply_border("Border FG Gradient", pattern, 50, index=1, 
+                       border_fg_gradient=['RED', 'ORANGE', 'YELLOW', 'GREEN', 'CYAN', 'BLUE'], 
+                       text_colour='!proc', log_files=log_targets)
+    
+    # Test 3: Border background gradient
+    logger.colour_log("!info", "Test 3: Border BG gradient", log_files=log_targets)
+    logger.apply_border("Border BG Gradient", pattern, 50, index=0,
+                       border_bg_gradient=['BLUE', 'CYAN', 'GREEN'],
+                       text_colour='!info', log_files=log_targets)
+    
+    # Test 4: Border rainbow
+    logger.colour_log("!info", "Test 4: Border rainbow", log_files=log_targets)
+    logger.apply_border("Border Rainbow", pattern, 50, index=1, border_rainbow=True, text_colour='!done', log_files=log_targets)
+    
+    # Test 5: Text foreground gradient (border solid)
+    logger.colour_log("!info", "Test 5: Text FG gradient", log_files=log_targets)
+    logger.apply_border("Text FG Gradient", pattern, 50, index=0, 
+                       border_colour='!proc', 
+                       text_fg_gradient=['MAGENTA', 'VIOLET', 'BLUE'], 
+                       log_files=log_targets)
+    
+    # Test 6: Text background gradient (border solid)
+    logger.colour_log("!info", "Test 6: Text BG gradient", log_files=log_targets)
+    logger.apply_border("Text BG Gradient", pattern, 50, index=1,
+                       border_colour='!info',
+                       text_bg_gradient=['GOLD', 'ORANGE', 'CRIMSON'],
+                       log_files=log_targets)
+    
+    # Test 7: Text rainbow (border solid)
+    logger.colour_log("!info", "Test 7: Text rainbow", log_files=log_targets)
+    logger.apply_border("Text Rainbow!", pattern, 50, index=0,
+                       border_colour='!pass',
+                       text_rainbow=True,
+                       log_files=log_targets)
+    
+    # Test 8: Both border and text with FG gradients
+    logger.colour_log("!info", "Test 8: Border + Text FG gradients", log_files=log_targets)
+    logger.apply_border("Dual FG Gradients", pattern, 55, index=1,
+                       border_fg_gradient=['RED', 'CRIMSON', 'MAGENTA'],
+                       text_fg_gradient=['CYAN', 'BLUE', 'INDIGO'],
+                       log_files=log_targets)
+    
+    # Test 9: Border rainbow + text gradient
+    logger.colour_log("!info", "Test 9: Border rainbow + Text gradient", log_files=log_targets)
+    logger.apply_border("Rainbow + Gradient Combo", pattern, 60, index=0,
+                       border_rainbow=True,
+                       text_fg_gradient=['GOLD', 'YELLOW', 'CHARTREUSE'],
+                       log_files=log_targets)
+    
+    # Test 10: Both border and text rainbow
+    logger.colour_log("!info", "Test 10: Full rainbow (border + text)", log_files=log_targets)
+    logger.apply_border("Double Rainbow!!", pattern, 50, index=1,
+                       border_rainbow=True,
+                       text_rainbow=True,
+                       log_files=log_targets)
+    
+    # Test 11: Text justification - left
+    logger.colour_log("!info", "Test 11: Justify left", log_files=log_targets)
+    logger.apply_border("Left Aligned", pattern, 60, index=0, 
+                       border_fg_gradient=['GREEN', 'CHARTREUSE'], 
+                       text_colour='!info', justify='left', log_files=log_targets)
+    
+    # Test 12: Text justification - center
+    logger.colour_log("!info", "Test 12: Justify center", log_files=log_targets)
+    logger.apply_border("Center Aligned", pattern, 60, index=1, 
+                       border_rainbow=True, 
+                       text_colour='!done', justify='center', log_files=log_targets)
+    
+    # Test 13: Text justification - right
+    logger.colour_log("!info", "Test 13: Justify right", log_files=log_targets)
+    logger.apply_border("Right Aligned", pattern, 60, index=0, 
+                       border_fg_gradient=['RED', 'YELLOW', 'GREEN'], 
+                       text_colour='!pass', justify='right', log_files=log_targets)
+    
+    # Test 14: Multiline border - simple
+    logger.colour_log("!info", "Test 14: Multiline border (simple)", log_files=log_targets)
+    logger.apply_border_multiline(
+        ["First line", "Second line", "Third line"],
+        pattern, 50, index=0,
+        border_colour='!proc',
+        text_colour='!info',
+        log_files=log_targets
+    )
+    
+    # Test 15: Multiline border with border gradient
+    logger.colour_log("!info", "Test 15: Multiline with border gradient", log_files=log_targets)
+    logger.apply_border_multiline(
+        ["Gradient Border", "Multiple Lines", "Cool Effect"],
+        pattern, 55, index=1,
+        border_fg_gradient=['BLUE', 'CYAN', 'GREEN', 'YELLOW', 'ORANGE', 'RED'],
+        text_colour='!proc',
+        justify='center',
+        log_files=log_targets
+    )
+    
+    # Test 16: Multiline border with text rainbow
+    logger.colour_log("!info", "Test 16: Multiline with text rainbow", log_files=log_targets)
+    logger.apply_border_multiline(
+        ["Rainbow Text!", "Line Two", "Line Three", "Even More Lines"],
+        pattern, 60, index=0,
+        border_colour='!pass',
+        text_rainbow=True,
+        justify='left',
+        log_files=log_targets
+    )
+    
+    # Test 17: Multiline with both border and text rainbows
+    logger.colour_log("!info", "Test 17: Multiline full rainbow", log_files=log_targets)
+    logger.apply_border_multiline(
+        ["Everything Rainbow", "So Much Color", "Maximum Vibes"],
+        pattern, 65, index=1,
+        border_rainbow=True,
+        text_rainbow=True,
+        justify='center',
+        log_files=log_targets
+    )
+    
+    # Test 18: Complex multiline with different justifications
+    logger.colour_log("!info", "Test 18: Multiline justified right", log_files=log_targets)
+    logger.apply_border_multiline(
+        ["Right aligned", "Multiple", "Lines"],
+        pattern, 50, index=0,
+        border_fg_gradient=['MAGENTA', 'VIOLET'],
+        text_fg_gradient=['GOLD', 'ORANGE'],
+        justify='right',
+        log_files=log_targets
+    )
 
-    logger.apply_border("test",pattern, 30, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
-    logger.print_bottom_border(pattern, 30, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
-
-    logger.colour_log("!proc", "Apply border tests passed.", log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
+    logger.colour_log("!proc", "Apply border tests passed.", log_files=log_targets)
 
 
 # --- 5. TESTS tuple ---
@@ -165,12 +324,13 @@ if __name__ == "__main__":
     successful = []
     unsuccessful = []
 
-    border_pattern = {
-        "TOP": ["==="],
-        "LEFT": ["|"],
-        "RIGHT": ["|"],
-        "BOTTOM": ["==="]
-    }
+    # Use BORDER_PATTERNS from config (using index 1 for second pattern)
+    border_pattern = border_patterns_config.get("BORDER_PATTERNS", {
+        "TOP": ["=="],
+        "LEFT": ["| "],
+        "RIGHT": [" |"],
+        "BOTTOM": ["=="]
+    })
 
     for num, name, func in TESTS:
         function_log = os.path.join(TEST_LOG_FOLDER, f"{name}.log")
