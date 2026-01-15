@@ -1,6 +1,25 @@
 
 # CHANGELOG
 
+## [0.8.1] - 2026-01-14
+
+### Added
+- **Upward Directory Search**: ConfigLoader now walks parent directories to find project root when loading config files, enabling retrofitted projects to work from any subdirectory.
+- **Project Root Detection**: `get_json_path()` and `get_config_file_path()` now search for `pyproject.toml` or `setup.py` as project root markers, resolving config files relative to project root instead of cwd.
+
+### Changed
+- **Config File Resolution**: Config loading now checks `cwd/`, `cwd/config/`, then walks up parent directories to find `config/` folder at project root before falling back to tUilKit package configs.
+- **Multi-Location Fallback**: Enhanced config loader supports both package structure (tUilKit as installed package) and retrofitted project structure (project-specific configs in `config/`).
+
+### Fixed
+- **Deep Directory Execution**: Resolved FileNotFoundError when running retrofitted projects from nested subdirectories (e.g., `src/ProjectName/`) by implementing upward search for config files.
+- **Config Path Resolution**: Fixed issue where ConfigLoader resolved config paths relative to cwd instead of project root, breaking execution from subdirectories.
+
+### Technical Details
+- Upward search stops at first parent containing `pyproject.toml` or `setup.py`.
+- Search order: cwd/file → cwd/config/file → parent/config/file (walking up) → tUilKit package config.
+- Enables M15tr355 retrofit framework to create self-contained projects with local config files.
+
 ## [0.8.0] - 2026-01-06
 
 ### Added
