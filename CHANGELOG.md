@@ -1,6 +1,33 @@
 
 # CHANGELOG
 
+## [0.9.1] - 2026-01-22
+
+### Added
+- **CLIMenuInterface**: New abstract interface for building interactive command-line menus with standardized navigation and input handling.
+- **CLIMenuHandler**: Complete implementation providing 9 interactive menu methods:
+  - `show_numbered_menu()` - Display numbered options with back/quit support
+  - `browse_directory()` - Interactive directory browser with navigation up/down folder hierarchy
+  - `select_from_list()` - Single or multi-select from items with 'all' option
+  - `confirm()` - Yes/no confirmation prompts with default values
+  - `prompt_with_default()` - Input prompts with validation and defaults
+  - `show_info_screen()` - Formatted information display
+  - `get_numeric_choice()` - Validated numeric input within ranges
+  - `show_menu_with_preview()` - Menu with item preview functionality
+  - `edit_key_value_pairs()` - Interactive configuration editor
+- **Factory Function**: `get_cli_menu_handler()` for singleton pattern access to CLIMenuHandler.
+- **Comprehensive Test Suite**: `test_cli_menu.py` with 8 interactive tests covering all menu handler functionality, supporting both interactive and automated modes.
+
+### Changed
+- **Consistent Menu Patterns**: All CLI menus now follow standardized patterns with rainbow borders, colour-coded output, and graceful back/cancel navigation.
+- **Path Selection**: Applications can now use interactive path browser instead of manual path entry.
+
+### Technical Details
+- CLIMenuHandler integrates with LoggerInterface for colour-coded output using semantic colour keys (`!info`, `!error`, `!done`, etc.).
+- Directory browser supports navigation, parent directory access, and optional directory creation.
+- All input methods include validation, error handling, and cancel/back options for graceful navigation.
+- Designed for building consistent, user-friendly CLI applications across tUilKit-enabled projects.
+
 ## [0.8.1] - 2026-01-14
 
 ### Added

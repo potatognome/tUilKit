@@ -7,12 +7,14 @@ Encapsulates setup logic and provides convenient one-liner instantiation.
 from tUilKit.config.config import ConfigLoader
 from tUilKit.utils.output import ColourManager, Logger
 from tUilKit.utils.fs import FileSystem
+from tUilKit.utils.cli_menu_handler import CLIMenuHandler
 
 # Singleton instances
 _config_loader = None
 _colour_manager = None
 _logger = None
 _file_system = None
+_cli_menu_handler = None
 
 
 def get_config_loader():
@@ -61,12 +63,24 @@ def get_file_system():
         _file_system = FileSystem()
     return _file_system
 
+def get_cli_menu_handler():
+    """
+    Get or create the singleton CLIMenuHandler instance.
+    Fully initialized with Logger for colour-coded menu output.
+    """
+    global _cli_menu_handler
+    if _cli_menu_handler is None:
+        logger = get_logger()
+        _cli_menu_handler = CLIMenuHandler(logger)
+    return _cli_menu_handler
+
 def reset_factories():
     """
     Reset all singleton instances. Useful for testing.
     """
-    global _config_loader, _colour_manager, _logger, _file_system
+    global _config_loader, _colour_manager, _logger, _file_system, _cli_menu_handler
     _config_loader = None
     _colour_manager = None
     _logger = None
     _file_system = None
+    _cli_menu_handler = None
