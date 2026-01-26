@@ -7,7 +7,7 @@ Encapsulates setup logic and provides convenient one-liner instantiation.
 from tUilKit.config.config import ConfigLoader
 from tUilKit.utils.output import ColourManager, Logger
 from tUilKit.utils.fs import FileSystem
-from tUilKit.utils.cli_menu_handler import CLIMenuHandler
+from tUilKit.utils.cli_menus import CLIMenuHandler
 
 # Singleton instances
 _config_loader = None

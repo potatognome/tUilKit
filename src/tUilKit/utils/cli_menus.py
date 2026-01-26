@@ -1,4 +1,4 @@
-# tUilKit/utils/cli_menu_handler.py
+# tUilKit/utils/cli_menus.py
 """
 Implementation of CLIMenuInterface for building interactive command-line menus.
 """
@@ -86,6 +86,9 @@ class CLIMenuHandler(CLIMenuInterface):
         prompt = f"\nSelect option ({','.join(prompt_parts)}): "
         choice = input(prompt).strip().lower()
         
+        # Log the selection
+        self.logger.colour_log("!prompt", "Selected: ", "!selection", f"{choice}")
+        
         # Handle back/quit
         if allow_back and choice in ['back', 'b']:
             return 'back'
@@ -166,6 +169,9 @@ class CLIMenuHandler(CLIMenuInterface):
             
             choice = input("\nChoice: ").strip().lower()
             
+            # Log the selection
+            self.logger.colour_log("!prompt", "Selected: ", "!selection", f"{choice}")
+            
             if choice == 'cancel':
                 return None
             elif choice == 's':
@@ -233,6 +239,9 @@ class CLIMenuHandler(CLIMenuInterface):
         
         choice = input(prompt).strip().lower()
         
+        # Log the selection
+        self.logger.colour_log("!prompt", "Selected: ", "!selection", f"{choice}")
+        
         if choice == 'cancel':
             return None
         
@@ -279,6 +288,12 @@ class CLIMenuHandler(CLIMenuInterface):
         default_str = "Y/n" if default else "y/N"
         choice = input(f"\n{message} ({default_str}): ").strip().lower()
         
+        # Log the selection
+        if choice:
+            self.logger.colour_log("!prompt", "Selected: ", "!selection", f"{choice}")
+        else:
+            self.logger.colour_log("!prompt", "Selected: ", "!selection", "(default)")
+        
         if not choice:
             return default
         
@@ -310,6 +325,12 @@ class CLIMenuHandler(CLIMenuInterface):
         
         while True:
             value = input(full_prompt).strip()
+            
+            # Log the selection
+            if value:
+                self.logger.colour_log("!prompt", "Selected: ", "!selection", f"{value}")
+            else:
+                self.logger.colour_log("!prompt", "Selected: ", "!selection", "(empty)")
             
             # Handle empty input
             if not value:
@@ -460,6 +481,7 @@ class CLIMenuHandler(CLIMenuInterface):
                         self.logger.colour_log("!info", "=" * 60)
                         input("\nPress Enter to continue...")
                 except ValueError:
+                    self.logger.colour_log("!prompt", f"Selected: ", "!selection", f"{choice}")
                     self.logger.colour_log("!error", "❌ Invalid input")
     
     def edit_key_value_pairs(

@@ -4,6 +4,8 @@
         "!time"          : "For the TIME portion of datetime strings",
 
         "!args"          : "For runtime arguments or parameters that are specified during runtime",
+        "!prompt"        : "For interactive prompts requesting user input -- ALONGSIDE <!selection>",
+        "!selection"     : "For user selections made during interactive prompts -- ALONGSIDE <!done>",
         "!cmd"           : "OS or batch execution of command line or terminal commands (e.g. copying files) -- ALONGSIDE <!done>",
         "!proc"          : "Internal process execution (e.g. procedure or function calls) -- ALONGSIDE <!done>",
         "!try"           : "For try blocks or test attempts",
@@ -67,6 +69,8 @@
         "!time"         : "LIME|BLACK",
 
         "!args"         : "YELLOW|BLACK",
+        "!prompt"       : "CANARY|ESPRESSO",
+        "!selection"    : "CANARY|BLACK",
         "!cmd"          : "CORAL|BLACK",
         "!proc"         : "CORAL|BLACK",
         "!try"          : "CYAN|BLACK",

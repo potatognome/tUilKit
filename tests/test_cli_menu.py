@@ -1,5 +1,5 @@
 """
-Tests for tUilKit.utils.cli_menu_handler (CLIMenuHandler) interactive menu functions.
+Tests for tUilKit.utils.cli_menus (CLIMenuHandler) interactive menu functions.
 Note: These tests require manual interaction. Automated tests are limited.
 """
 
@@ -22,7 +22,7 @@ project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
-from tUilKit.utils.cli_menu_handler import CLIMenuHandler
+from tUilKit.utils.cli_menus import CLIMenuHandler
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.config.config import ConfigLoader
 
