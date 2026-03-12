@@ -1,6 +1,23 @@
 
 # CHANGELOG
 
+## [0.9.3] - 2026-03-11
+
+### Changed
+- **Version Maintenance**: Aligned version metadata across `pyproject.toml`, `setup.py`, and `README.md` (setup.py was stale at 0.7.1).
+- **Documentation Updates**: Updated README to reflect current version and `ColourKeyEditor` tooling additions.
+
+## [0.9.2] - 2026-02-01
+
+### Added
+- **ColourKeyEditor**: Interactive visual tool in `tools/colour_key_editor.py` for editing colour keys in `COLOURS.json`. Supports arrow-key navigation, live ANSI preview, foreground/background colour selection from the full 40+ colour palette, and writes changes back to the config file.
+- **`tools/` Package**: New `tools/` sub-package under `src/tUilKit/` providing developer utilities that build on top of tUilKit's core interfaces.
+
+### Technical Details
+- `ColourKeyEditor` uses `msvcrt` for raw keypress input on Windows and falls back to standard input on other platforms.
+- Integrates with `CLIMenuHandler`, `ColourManager`, `ConfigLoader`, and `Logger` factory singletons for consistent output and config access.
+- Accessible via direct instantiation: `from tUilKit.tools.colour_key_editor import ColourKeyEditor`.
+
 ## [0.9.1] - 2026-01-22
 
 ### Added
