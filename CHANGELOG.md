@@ -1,7 +1,49 @@
+## [1.1.0] - 2026-03-13
+VERSION UPDATED MANUALLY: 1.1.3 -> 1.1.0
+
+### Changed
+- **Modular Workspace Log/Test Log Path Resolution**: Log and test log paths now use WORKSPACE_ROOT_PATH and RELATIVE_FOLDER_PATHS when ROOT_MODES is set to "workspace". All log/test log utilities are fully config-driven and workspace-aware.
+- **ConfigLoader Update**: Added get_log_file_path and get_test_log_file_path methods for modular path resolution.
+- **SHARED_CONFIG_FILES Support**: Loader now resolves shared config files from modular folders, supporting workspace/project root and dev/test environments.
+- **Version bump**: Updated tUilKit version from 1.0.3 to 1.1.3 for modular config and log path improvements.
+## [0.9.8] - 2026-03-13
+
+### Changed
+- **Workspace/Project Log Root Toggle**: Added LOG_ROOT_MODE config option for workspace/project log rooting. All utilities now respect this toggle.
+- **Logger/ConfigLoader Refactor**: All modules now use factories for Logger and ConfigLoader initialization. Removed duplicate logger/config loader logic.
+- **Import Cleanup**: Updated all imports to reference utils/config.py and factories for singleton access.
+- **Formatter Utility Update**: Formatter now loads column mapping via config loader for consistency.
+- **FileSystem Refactor**: FileSystem now always uses logger/config loader from factories, ensuring consistent log rooting and config access.
+## [0.9.7] - 2026-03-13
+
+### Changed
+- **Config File Consolidation**: All config files (COLOURS.json, BORDER_PATTERNS.json, COLUMN_MAPPING.json) now reside in project root `config/` folder. Removed src-level config duplication.
+- **Config Regularity**: GLOBAL_CONFIG.json updated for consistent structure and references.
+## [0.9.6] - 2026-03-13
+
+### Changed
+- **Config Loader Refactor**: Moved config loader from `src/tUilKit/config/config.py` to `src/tUilKit/utils/config.py` for clarity and maintainability.
+- **Config Folder Review**: Confirmed all config files reside in project root `config/` folder; removed src-level config duplication.
+## [0.9.5] - 2026-03-13
+
+### Changed
+- **Config Folder Consolidation**: All configuration files now reside in the project root `config/` folder. Removed src-level config folder usage.
 
 # CHANGELOG
 
-## [0.9.3] - 2026-03-11
+
+## [0.9.4] - 2026-03-13
+
+### Changed
+- **Log Rooting Refactor**: All logs now routed to workspace-level `.logs/tUilKit/` (and `.logs/<app>/` for tUilKit-enabled apps).
+- **Dual Logging Support**: Logger can write SESSION and audit logs to both tUilKit and app-specific folders for cross-app troubleshooting.
+- **Config Update**: Added `config/GLOBAL_CONFIG.json` with new log file paths.
+
+## [1.0.3] - 2026-03-13
+### Manual version bump
+ - Bumped tUilKit version from 0.9.3 to 1.0.3 for audit and compatibility.
+ - Updated documentation to reflect new version and copilot-instructions.md guidance.
+ - See workspace copilot-instructions for centralized log/config rooting, interface-first design, and test framework details.
 
 ### Changed
 - **Version Maintenance**: Aligned version metadata across `pyproject.toml`, `setup.py`, and `README.md` (setup.py was stale at 0.7.1).

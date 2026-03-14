@@ -1,0 +1,72 @@
+{
+    "PROJECT_NAME": "tUilKit",
+    "PROJECT_FOLDER": "tUilKit",
+    "PROJECT_DESCRIPTION": "Core utility toolkit for CLI apps: colour management, filesystem helpers, JSON config, dataframe utilities, logging, and testing framework.",
+    "AUTHOR": "Daniel Austin <the.potato.gnome@gmail.com>",
+    "VERSION": "1.1.0",
+    "MAIN_ENTRY_POINT": "src/tUilKit/__init__.py",
+
+    "INFO": {
+        "ROOT_MODES: workspace" : "Paths are relative to the workspace root.",
+        "ROOT_MODES: project"   : "Paths are relative to the project root.",
+        "ROOT_MODES: manual"    : "Both with manual sync - user triggers sync when needed.",
+        "ROOT_MODES: recent"    : "Both with sync based on file modification timestamps.",
+        "ROOT_MODES: ws-wins"   : "Both with sync based on workspace window focus changes.",
+        "ROOT_MODES: pr-wins"   : "Both with sync based on project window focus changes.",
+        "ROOT_MODES: auto"      : "Both with automatic sync - attempt 2 way sync."
+    },
+    "ROOT_MODES": {
+        "LOGS" : "workspace",
+        "TEST_LOGS" : "workspace",
+        "CONFIG" : "auto",
+        "DOCS" : "auto"
+    },
+
+    "WORKSPACE_ROOT_PATH"       : "C:/Repository/Daniel/dev_local/Dev",
+    "PROJECT_ROOT_PATH"         : "C:/Repository/Daniel/dev_local/Dev/tUilKit",
+    
+    "RELATIVE_FOLDER_PATHS" : {
+        "LOGS"              : ".logs/tUilKit/",
+        "TEST_LOGS"         : ".testlogs/tUilKit/",
+        "DOCS"              : "docs/tUilKit/",
+        "CONFIG"            : "config/",
+        "SHARED"            : "config/GLOBAL_SHARED.d/"
+    },
+    "SHARED_CONFIG_FILES"   : {
+        "COLOURS" : "COLOURS.json",
+        "BORDER_PATTERNS" : "BORDER_PATTERNS.json"
+    },
+    "LOG_FILES": {
+        "MASTER"            : ".logs/tUilKit/MASTER.log",
+        "ERROR"             : ".logs/tUilKit/ERROR.log",
+        "FS"                : ".logs/tUilKit/FS.log",
+        "INIT"              : ".logs/tUilKit/INIT.log",
+        "RUNTIME"           : ".logs/tUilKit/RUNTIME.log",
+        "WARNING"           : ".logs/tUilKit/WARNING.log",
+        "DATABASE"          : ".logs/tUilKit/DATABASE.log",
+        "DEBUG"             : ".logs/tUilKit/DEBUG.log"
+    },
+    "LOG_CATEGORIES"        : {
+        "default"           : ["MASTER", "SESSION"],
+        "error"             : ["ERROR", "SESSION", "MASTER"],
+        "fs"                : ["MASTER", "SESSION", "FS"],
+        "init"              : ["INIT", "SESSION", "MASTER"],
+        "debug"             : ["DEBUG", "SESSION"],
+        "warning"           : ["WARNING", "SESSION", "MASTER"],
+        "database"          : ["DATABASE", "SESSION", "MASTER"],
+        "all"               : ["MASTER", "SESSION", "ERROR", "FS", "INIT", "DEBUG", "WARNING", "DATABASE"]
+    },
+    "TESTS_OPTIONS": {        
+        "TEST_LOGS_PREFIX"          : ["{test_script_filename}", " - "],
+        "TEST_LOGS_FOLDER"          : ".testlogs/tUilKit/",
+        "TIME_STAMP_TEST_LOGS"      : true,
+        "TIME_STAMP_TEST_FOLDERS"   : true,
+        "TIME_STAMP_TEST_FILES"     : true
+    },
+    "TIME_STAMP_OPTIONS"    : {
+        "FORMAT"            : "%Y%m%d_%H%M%S",
+        "LOGS"              : true,
+        "FILES"             : false,
+        "FOLDERS"           : false
+    }
+}
