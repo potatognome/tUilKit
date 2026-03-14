@@ -23,21 +23,22 @@ from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.sheets import (
     hash_row, smart_diff, find_common_columns, find_fuzzy_columns, find_composite_keys, SmartDataFrameHandler
 )
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 
 COLOUR_CONFIG_PATH = os.path.join(base_dir, "tUilKit", "config", "COLOURS.json")
 with open(COLOUR_CONFIG_PATH, "r") as f:
     colour_config = json.load(f)
 
+
 colour_manager = ColourManager(colour_config)
-logger = Logger(colour_manager)
 config_loader = ConfigLoader()
+tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
+test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
+test_log_file = os.path.join(test_logs_folder, "test_sheets_output.log")
+logger = Logger(colour_manager, log_files={"SHEETS": test_log_file})
 
-TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
-TEST_LOG_FILE = os.path.join(TEST_LOG_FOLDER, "test_sheets_output.log")
-
-if not os.path.exists(TEST_LOG_FOLDER):
-    os.makedirs(TEST_LOG_FOLDER, exist_ok=True)
+if not os.path.exists(test_logs_folder):
+    os.makedirs(test_logs_folder, exist_ok=True)
 
 # Remove all log files if --clean is passed
 if args.clean:

@@ -1,5 +1,6 @@
 """
 Tests for tUilKit.utils.output (Logger, ColourManager) and tUilKit.utils.fs (FileSystem) functions.
+ConfigLoader now loads from tUilKit_CONFIG.json.
 """
 
 import sys
@@ -16,6 +17,7 @@ parser = argparse.ArgumentParser(description="Run tUilKit output/fs test suite."
 parser.add_argument('--clean', action='store_true', help='Remove all log files in the test log folder before running tests.')
 args, unknown = parser.parse_known_args()
 
+
 # --- 2. Imports and initialization ---
 base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
@@ -24,51 +26,43 @@ if base_dir not in sys.path:
 
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 
 # Change to project root before initializing ConfigLoader so paths resolve correctly
 original_cwd = os.getcwd()
 os.chdir(project_root)
 
-COLOUR_CONFIG_PATH = os.path.join(base_dir, "tUilKit", "config", "COLOURS.json")
-
-# Use ConfigLoader to load colour config
 config_loader = ConfigLoader()
 colour_config = config_loader.load_colour_config()
 border_patterns_config = config_loader.load_border_patterns_config()
-
-# Restore original working directory
-os.chdir(original_cwd)
-
 colour_manager = ColourManager(colour_config)
-logger = Logger(colour_manager)
+tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
+test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
+test_log_file = os.path.join(test_logs_folder, "test_output_output.log")
+logger = Logger(colour_manager, log_files={"OUTPUT": test_log_file})
 file_system = FileSystem(logger)
 
-TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
-TEST_LOG_FILE = os.path.join(TEST_LOG_FOLDER, "test_output_output.log")
-
 # Ensure all log folders exist
-all_log_paths = list(logger.log_files.values()) + [TEST_LOG_FILE]
+all_log_paths = list(logger.log_files.values()) + [test_log_file]
 for path in all_log_paths:
     folder = os.path.dirname(path)
     if folder:
         file_system.validate_and_create_folder(folder, category="fs")
 default_log_files = config_loader.global_config.get("LOG_FILES", {})
-# add test log files to default_log_files
 
-if not os.path.exists(TEST_LOG_FOLDER):
-    os.makedirs(TEST_LOG_FOLDER, exist_ok=True)
+if not os.path.exists(test_logs_folder):
+    os.makedirs(test_logs_folder, exist_ok=True)
 
 # Remove all log files if --clean is passed
 if args.clean:
-    for fname in os.listdir(TEST_LOG_FOLDER):
+    for fname in os.listdir(test_logs_folder):
         if fname.endswith('.log'):
             try:
                 # Create backup before removing
                 base, ext = os.path.splitext(fname)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 backup_fname = f"{base}_{timestamp}.bak"
-                os.rename(os.path.join(TEST_LOG_FOLDER, fname), os.path.join(TEST_LOG_FOLDER, backup_fname))
+                os.rename(os.path.join(test_logs_folder, fname), os.path.join(test_logs_folder, backup_fname))
                 print(f"Backed up {fname} to {backup_fname}")
             except Exception as e:
                 print(f"Could not backup {fname}: {e}")
@@ -133,7 +127,7 @@ def test_file_system(function_log=None):
 
 """
 test_apply_border function to test the ConfigLoader loading the border patterns from the BORDER_PATTERNS.json file 
-whose location is specified in the GLOBAL_CONFIG.json file.
+whose location is specified in the tUilKit_CONFIG.json file.
 and test the apply_border application in logger and log results to function_log and all log_files.
 Tests multiple color options: single color, foreground gradient, background gradient, rainbow, separate border/text gradients, and multiline borders.
 """

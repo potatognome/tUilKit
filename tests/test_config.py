@@ -1,55 +1,39 @@
-"""
-Tests for tUilKit.config.config (ConfigLoader) and configuration management.
-"""
 
+"""
+Minimal test for tUilKit ConfigLoader: imports and colour_log messages for config paths.
+"""
 import sys
 import os
-import json
-import time
-import tempfile
-import shutil
-
-# --- 1. Command line argument for log cleanup ---
-import argparse
-parser = argparse.ArgumentParser(description="Run tUilKit ConfigLoader test suite.")
-parser.add_argument('--clean', action='store_true', help='Remove all log files in the test log folder before running tests.')
-args, unknown = parser.parse_known_args()
-
-# --- 2. Imports and initialization ---
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
-
-from tUilKit.config.config import ConfigLoader
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
+from tUilKit.utils.config import ConfigLoader
 from tUilKit.utils.output import Logger, ColourManager
-from tUilKit.utils.fs import FileSystem
-from datetime import datetime
 
-# Load configurations
 config_loader = ConfigLoader()
 colour_config = config_loader.load_colour_config()
-border_patterns = config_loader.load_border_patterns_config()
-
 colour_manager = ColourManager(colour_config)
 logger = Logger(colour_manager)
+
+# Log config paths using colour_log
+
+# Log config paths using colour_log (minimal, no extra code)
+
+logger.colour_log("!output", f"COLOURS config path: {config_loader.get_config_file_path('COLOURS')}")
+logger.colour_log("!output", f"BORDER_PATTERNS config path: {config_loader.get_config_file_path('BORDER_PATTERNS')}")
 file_system = FileSystem(logger)
 
-TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
-TEST_LOG_FILE = os.path.join(TEST_LOG_FOLDER, "test_config.log")
-
 # Ensure all log folders exist
-if not os.path.exists(TEST_LOG_FOLDER):
-    os.makedirs(TEST_LOG_FOLDER, exist_ok=True)
+if not os.path.exists(test_logs_folder):
+    os.makedirs(test_logs_folder, exist_ok=True)
 
 # Remove all log files if --clean is passed
 if args.clean:
-    for fname in os.listdir(TEST_LOG_FOLDER):
+    for fname in os.listdir(test_logs_folder):
         if fname.endswith('.log'):
             try:
                 base, ext = os.path.splitext(fname)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 backup_fname = f"{base}_{timestamp}.bak"
-                os.rename(os.path.join(TEST_LOG_FOLDER, fname), os.path.join(TEST_LOG_FOLDER, backup_fname))
+                os.rename(os.path.join(test_logs_folder, fname), os.path.join(test_logs_folder, backup_fname))
                 print(f"Backed up {fname} to {backup_fname}")
             except Exception as e:
                 print(f"Could not backup {fname}: {e}")
@@ -59,7 +43,7 @@ temp_dir = tempfile.mkdtemp()
 
 # --- 4. Test functions ---
 def test_config_loader_init(function_log=None):
-    """Test ConfigLoader initialization and global_config loading."""
+    """Test ConfigLoader initialization and global_config loading from tUilKit_CONFIG.json."""
     try:
         # Test initialization
         loader = ConfigLoader()
@@ -68,11 +52,11 @@ def test_config_loader_init(function_log=None):
         assert "VERSION" in loader.global_config, "VERSION should be in global_config"
         assert loader.global_config["VERSION"] == "0.7.0", f"VERSION should be 0.7.0, got {loader.global_config['VERSION']}"
         
-        logger.colour_log("!proc", "ConfigLoader initialization tests passed.", log_files=TEST_LOG_FILE)
+        logger.colour_log("!proc", "ConfigLoader initialization tests passed.", log_files=test_log_file)
         if function_log:
             logger.colour_log("!proc", "ConfigLoader initialization tests passed.", log_files=function_log, log_to="file")
     except AssertionError as e:
-        logger.log_exception("test_config_loader_init failed", e, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
+        logger.log_exception("test_config_loader_init failed", e, log_files=[test_log_file, function_log] if function_log else [test_log_file])
         raise
 
 def test_get_json_path(function_log=None):

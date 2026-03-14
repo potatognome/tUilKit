@@ -8,16 +8,62 @@ import shutil
 import os
 import sys
 from pathlib import Path
+
 from tUilKit.interfaces.file_system_interface import FileSystemInterface
-from tUilKit.config.config import config_loader
+from tUilKit.utils.config import ConfigLoader
 
 class FileSystem(FileSystemInterface):
-    def __init__(self, logger, log_files=None):
+    def __init__(self, logger=None, log_files=None):
         """
         Initializes the FileSystem with a logger and optional log_files dict.
         """
-        super().__init__(logger, log_files)
-        # Load log categories from config, with fallback defaults
+        from tUilKit.utils.output import Logger
+        config_loader = ConfigLoader()
+        self.logger = logger or Logger()
+        root_modes = config_loader.global_config.get("ROOT_MODES", {})
+        log_root_mode = root_modes.get("LOGS", "project")
+        log_files_dict = log_files or config_loader.global_config.get("LOG_FILES", {})
+        resolved_log_files = {}
+        if log_root_mode == "workspace":
+            workspace_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
+            for key in log_files_dict:
+                if not os.path.isabs(log_files_dict[key]):
+                    resolved_log_files[key] = os.path.join(workspace_root, log_files_dict[key])
+                else:
+                    resolved_log_files[key] = log_files_dict[key]
+        elif log_root_mode == "auto":
+            workspace_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
+            for key in log_files_dict:
+                if not os.path.isabs(log_files_dict[key]):
+                    resolved_log_files[key] = os.path.join(workspace_root, log_files_dict[key])
+                else:
+                    resolved_log_files[key] = log_files_dict[key]
+        elif log_root_mode == "project":
+            project_root = os.path.abspath(os.path.join(os.getcwd(), "Dev", "tUilKit"))
+            for key in log_files_dict:
+                if not os.path.isabs(log_files_dict[key]):
+                    resolved_log_files[key] = os.path.join(project_root, log_files_dict[key])
+                else:
+                    resolved_log_files[key] = log_files_dict[key]
+        else:
+            resolved_log_files = log_files_dict
+        super().__init__(self.logger, resolved_log_files)
+        self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {
+            "default": ["MASTER", "SESSION"],
+            "error": ["ERROR", "SESSION", "MASTER"],
+            "fs": ["MASTER", "SESSION", "FS"]
+        })
+
+
+    def __init__(self, logger=None, log_files=None):
+        """
+        Initializes the FileSystem with a logger and optional log_files dict.
+        """
+        from tUilKit.utils.output import Logger
+        config_loader = ConfigLoader()
+        self.logger = logger or Logger()
+        log_files = log_files or config_loader.global_config.get("LOG_FILES", {})
+        super().__init__(self.logger, log_files)
         self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {
             "default": ["MASTER", "SESSION"],
             "error": ["ERROR", "SESSION", "MASTER"],

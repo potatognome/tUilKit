@@ -1,0 +1,6 @@
+{
+    "BORDER_PATTERNS": {
+        "default": "-----",
+        "thick": "====="
+    }
+}

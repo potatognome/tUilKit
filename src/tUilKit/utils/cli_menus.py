@@ -16,7 +16,7 @@ if base_dir not in sys.path:
 from tUilKit.interfaces.cli_menu_interface import CLIMenuInterface
 from tUilKit.interfaces.logger_interface import LoggerInterface
 from tUilKit.utils.output import Logger, ColourManager
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 
 
 class CLIMenuHandler(CLIMenuInterface):

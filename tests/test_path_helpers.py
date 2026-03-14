@@ -10,7 +10,7 @@ if str(SRC_DIR) not in sys.path:
 
 from tUilKit.utils.fs import normalize_path, detect_os, colourize_path
 from tUilKit.utils.output import ColourManager
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 
 
 def _colour_manager():

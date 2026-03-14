@@ -4,6 +4,19 @@
 
 tUilKit is a modular Python toolkit providing utility functions for logging, colour management, file system operations, configuration loading, and dataframe manipulation. The package is structured around clear interfaces for easy extension and testing.
 
+---
+
+## Key Principles & Best Practices
+
+- **Interface-first, factory-driven:** Always use provided interfaces and factory functions for initialization and extension.
+- **Config-driven:** All log/config paths, colour keys, and border patterns are externalized in JSON configs. Avoid hardcoding paths or colour codes.
+- **Colour-aware logging:** Use COLOUR_KEY consistently for semantic, visually distinct logs.
+- **Docstring coverage:** All public methods should have clear docstrings describing purpose, parameters, and output.
+- **Testing:** Ensure robust test coverage, including error handling, config overrides, and edge cases. Use per-test logs and verify log outputs.
+- **Refactoring:** Regularly review for legacy code and consolidate repeated logic into shared utilities.
+
+---
+
 ## Quick Start: Initializing tUilKit
 
 ### Factory Initialization (Recommended)
@@ -33,6 +46,8 @@ file_system = FileSystem(logger, log_files=log_files)
 
 See also: [ColourKey Usage Guide](ColourKey_Usage_Guide.md) and [FileSystem Usage Guide](FileSystem_Usage_Guide.md) for focused references.
 
+---
+
 ## The 4 Primary Interfaces
 
 ### 1. LoggerInterface (Logger Class)
@@ -44,6 +59,21 @@ See also: [ColourKey Usage Guide](ColourKey_Usage_Guide.md) and [FileSystem Usag
 - `log_exception(description, exception, category="error")` - Log exceptions with formatting
 - `log_done(log_files=None)` - Log completion messages
 - `apply_border(text, pattern, total_length=None)` - Create bordered text sections
+
+**Docstring Example:**
+```python
+def colour_log(self, *args, category="default", log_files=None, log_to="both"):
+  """
+  Log messages with colour formatting and category-based routing.
+  Args:
+    *args: Message parts, can include COLOUR_KEY codes.
+    category: Log category or list of categories.
+    log_files: Optional override for log file dict.
+    log_to: 'console', 'file', or 'both'.
+  Returns:
+    None
+  """
+```
 
 **Example**:
 ```python
@@ -58,6 +88,10 @@ except Exception as e:
 
 # Multi-category logging (new feature)
 logger.colour_log("!info", "File system error occurred", category=["fs", "error"])
+
+# Advanced: Selective and Multi-Category Logging
+logger.colour_log("!warn", "Security alert", category="security")
+logger.colour_log("!error", "Disk space low", category=["fs", "error"])
 ```
 
 ### 2. ColourInterface (ColourManager Class)
@@ -132,6 +166,21 @@ config_loader.ensure_folders_exist(file_system)
 - `merge(df_list, merge_type="outer", config_loader=None, logger=None)` - Smart DataFrame merging
 - `compare(df1, df2)` - Compare DataFrames ignoring row order
 
+**Docstring Example:**
+```python
+def merge(self, df_list, merge_type="outer", config_loader=None, logger=None):
+  """
+  Merge multiple DataFrames with intelligent column handling.
+  Args:
+    df_list: List of pandas DataFrames.
+    merge_type: Merge strategy ('outer', 'inner', etc.).
+    config_loader: Optional ConfigLoader for column mapping.
+    logger: Optional Logger for operation logging.
+  Returns:
+    Merged DataFrame
+  """
+```
+
 **Example**:
 ```python
 from tUilKit.utils.sheets import SmartDataFrameHandler
@@ -179,6 +228,8 @@ The `COLOUR_KEY` in `COLOURS.json` defines colour mappings for different types o
 # Use colour keys in logging
 logger.colour_log("!info", "Processing", "!file", filename, "!done", "complete")
 
+# Troubleshooting: If colour codes do not appear, check COLOURS.json and ensure your terminal supports ANSI codes.
+
 # Direct colour formatting
 coloured = colour_manager.colour_fstr("!error", "Error:", "!text", message)
 ```
@@ -191,6 +242,8 @@ Located in `src/tUilKit/dict/`:
 2. **`DICT_CODES.py`** - ANSI escape code components
 
 These provide the foundation for colour management and are used internally by ColourManager.
+
+---
 
 ## Advanced Features
 
@@ -296,6 +349,8 @@ custom_logs = {
     "ERROR": "/var/log/myapp/errors.log"
 }
 logger = Logger(colour_manager, log_files=custom_logs)
+
+---
 ```
 
 ## Best Practices
@@ -305,6 +360,10 @@ logger = Logger(colour_manager, log_files=custom_logs)
 3. **Include logger in DataFrame operations** - Enables operation tracking
 4. **Use COLOUR_KEY consistently** - Maintains visual consistency
 5. **Handle exceptions with log_exception()** - Proper error formatting
+
+6. **Add/expand docstrings for all public methods** - Improves maintainability and onboarding.
+7. **Test error handling and config overrides** - Ensure robust, predictable behavior.
+8. **Refactor legacy code and consolidate logic** - Reduce duplication and technical debt.
 
 ## Testing
 
@@ -319,6 +378,13 @@ python -m pytest tests/test_multi_category.py --clean -v
 
 # Run specific test
 python -m pytest tests/test_fs_ops.py::test_validate_and_create_folder -v
+
+# Edge Case Testing
+python -m pytest tests/ --tb=short --disable-warnings
+
+# Tips:
+- Check log outputs for correct colour and category routing.
+- Test with missing/invalid config files to verify error handling.
 ```
 
 ## Integration Example
@@ -357,4 +423,17 @@ df2 = pd.DataFrame({"name": ["Charlie", "Diana"], "age": [35, 40]})
 
 merged = df_handler.merge([df1, df2], logger=logger)
 logger.colour_log("!info", "Merged", "!int", len(merged), "!data", "rows")
+
+# Troubleshooting & Advanced Usage
+
+# - If logs do not appear in expected files, check LOG_FILES and LOG_CATEGORIES in GLOBAL_CONFIG.json.
+# - For custom log routing, update logger.LOG_KEYS or pass custom log_files.
+# - For advanced DataFrame merging, provide a COLUMN_MAPPING.json config.
+
+# Refactoring Guidance
+# - Regularly review utils for legacy code.
+# - Move repeated logic (e.g., log file path resolution) into shared utilities.
+
+# Documentation
+# - Expand/maintain docstrings and usage guides as new features are added.
 ```

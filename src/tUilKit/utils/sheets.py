@@ -13,7 +13,7 @@ import os
 from itertools import combinations
 from fuzzywuzzy import fuzz
 from tUilKit.interfaces.df_interface import DataFrameInterface
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 
 def hash_row(row, columns):
     """Creates a consistent hash for a row, regardless of column order."""

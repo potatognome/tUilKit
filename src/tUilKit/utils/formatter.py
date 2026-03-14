@@ -7,7 +7,9 @@ import json
 
 def load_column_widths():
     """Loads predefined column widths from JSON configuration."""
-    with open("tUilKit/config/COLUMN_WIDTHS.json", "r") as file:
+    config_loader = ConfigLoader()
+    config_path = config_loader.get_config_file_path("COLUMN_MAPPING")
+    with open(config_path, "r") as file:
         return json.load(file)
 
 def apply_column_format(df):

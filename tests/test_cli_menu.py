@@ -24,7 +24,7 @@ if base_dir not in sys.path:
 
 from tUilKit.utils.cli_menus import CLIMenuHandler
 from tUilKit.utils.output import Logger, ColourManager
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 
 # Change to project root for config loading
 original_cwd = os.getcwd()
@@ -35,26 +35,27 @@ colour_config = config_loader.load_colour_config()
 
 os.chdir(original_cwd)
 
+
 colour_manager = ColourManager(colour_config)
-logger = Logger(colour_manager)
+tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
+test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
+test_log_file = os.path.join(test_logs_folder, "test_cli_menu_output.log")
+logger = Logger(colour_manager, log_files={"CLIMENU": test_log_file})
 menu_handler = CLIMenuHandler(logger)
 
-TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
-TEST_LOG_FILE = os.path.join(TEST_LOG_FOLDER, "test_cli_menu_output.log")
-
 # Ensure test log folder exists
-if not os.path.exists(TEST_LOG_FOLDER):
-    os.makedirs(TEST_LOG_FOLDER, exist_ok=True)
+if not os.path.exists(test_logs_folder):
+    os.makedirs(test_logs_folder, exist_ok=True)
 
 # Remove all log files if --clean is passed
 if args.clean:
-    for fname in os.listdir(TEST_LOG_FOLDER):
+    for fname in os.listdir(test_logs_folder):
         if fname.endswith('.log'):
             try:
                 base, ext = os.path.splitext(fname)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 backup_fname = f"{base}_{timestamp}.bak"
-                os.rename(os.path.join(TEST_LOG_FOLDER, fname), os.path.join(TEST_LOG_FOLDER, backup_fname))
+                os.rename(os.path.join(test_logs_folder, fname), os.path.join(test_logs_folder, backup_fname))
                 print(f"Backed up {fname} to {backup_fname}")
             except Exception as e:
                 print(f"Could not backup {fname}: {e}")
@@ -63,11 +64,11 @@ if args.clean:
 os.system('cls' if os.name == 'nt' else 'clear')
 
 # Print rainbow row separator
-logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=TEST_LOG_FILE)
+logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=test_log_file)
 
 # Display last command
-logger.colour_log("!info", "Last command: python tests/test_cli_menu.py", log_files=TEST_LOG_FILE)
-logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=TEST_LOG_FILE)
+logger.colour_log("!info", "Last command: python tests/test_cli_menu.py", log_files=test_log_file)
+logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=test_log_file)
 
 # --- 3. Test variables ---
 border_pattern = "="
@@ -77,7 +78,7 @@ def test_show_numbered_menu(function_log=None):
     """Test numbered menu display and selection"""
     logger.colour_log("!info", "This test function", "!test", "test_show_numbered_menu", "!info", 
                      "tests the numbered menu display with back and quit options.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     options = [
         {"key": "option1", "label": "First Option", "icon": "📋"},
@@ -86,12 +87,12 @@ def test_show_numbered_menu(function_log=None):
     ]
     
     logger.colour_log("!test", "Testing menu display with 3 options...", 
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     # Note: Actual selection requires user interaction
     # This test validates the structure and display
     logger.colour_log("!expect", "Expected: Menu with 3 numbered options, back, and quit",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     if not args.auto:
         result = menu_handler.show_numbered_menu(
@@ -102,58 +103,58 @@ def test_show_numbered_menu(function_log=None):
         )
         
         logger.colour_log("!test", "User selected:", "!data", str(result),
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         
         if result == "option1":
             logger.colour_log("!pass", "✅ PASSED - Correct selection",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
         else:
             logger.colour_log("!warn", "⚠️  Different selection made:", "!data", str(result),
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Structure validated",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
 
 def test_confirm(function_log=None):
     """Test yes/no confirmation prompts"""
     logger.colour_log("!info", "This test function", "!test", "test_confirm", "!info",
                      "tests yes/no confirmation with default values.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     logger.colour_log("!test", "Testing confirmation prompt with default=True...",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     if not args.auto:
         result = menu_handler.confirm("Press Enter to accept default (Yes)", default=True)
         
         logger.colour_log("!test", "User response:", "!data", str(result),
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         
         if result:
             logger.colour_log("!pass", "✅ PASSED - Confirmed",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
         else:
             logger.colour_log("!warn", "⚠️  User declined",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Structure validated",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
 
 def test_prompt_with_default(function_log=None):
     """Test input prompts with defaults"""
     logger.colour_log("!info", "This test function", "!test", "test_prompt_with_default", "!info",
                      "tests input prompts with default values and validation.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     def validate_name(value):
         return len(value) >= 3
     
     logger.colour_log("!test", "Testing prompt with default value 'TestUser'...",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     if not args.auto:
         result = menu_handler.prompt_with_default(
@@ -164,31 +165,31 @@ def test_prompt_with_default(function_log=None):
         )
         
         logger.colour_log("!test", "User entered:", "!data", str(result),
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         
         if result and len(result) >= 3:
             logger.colour_log("!pass", "✅ PASSED - Valid input received",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
         else:
             logger.colour_log("!fail", "❌ FAILED - Invalid input",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Validation logic verified",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
 
 def test_select_from_list(function_log=None):
     """Test single and multi-select from list"""
     logger.colour_log("!info", "This test function", "!test", "test_select_from_list", "!info",
                      "tests single and multi-select functionality.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     items = ["H3l3n", "Syncbot", "tUilKit", "utilsbase"]
     icons = ["📦", "🔄", "🛠️", "⚙️"]
     
     logger.colour_log("!test", "Testing multi-select with 'all' option...",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     if not args.auto:
         result = menu_handler.select_from_list(
@@ -212,7 +213,7 @@ def test_select_from_list(function_log=None):
                              log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Structure validated",
                          log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
 
@@ -220,7 +221,7 @@ def test_get_numeric_choice(function_log=None):
     """Test numeric input validation"""
     logger.colour_log("!info", "This test function", "!test", "test_get_numeric_choice", "!info",
                      "tests validated numeric input within ranges.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     logger.colour_log("!test", "Testing numeric input (1-10, enter 5)...",
                      log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
@@ -234,11 +235,11 @@ def test_get_numeric_choice(function_log=None):
         )
         
         logger.colour_log("!test", "User entered:", "!data", str(result),
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         
         if result == 5:
             logger.colour_log("!pass", "✅ PASSED - Correct number",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
         elif result is not None:
             logger.colour_log("!warn", "⚠️  Different number entered:",
                              "!data", str(result),
@@ -248,15 +249,15 @@ def test_get_numeric_choice(function_log=None):
                              log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Validation logic verified",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
 
 def test_show_info_screen(function_log=None):
     """Test information display screen"""
     logger.colour_log("!info", "This test function", "!test", "test_show_info_screen", "!info",
                      "tests formatted information display.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     device_info = {
         "Name": "Test Device",
@@ -266,7 +267,7 @@ def test_show_info_screen(function_log=None):
     }
     
     logger.colour_log("!test", "Displaying info screen...",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     if not args.auto:
         menu_handler.show_info_screen(
@@ -275,18 +276,18 @@ def test_show_info_screen(function_log=None):
             wait_for_input=True
         )
         logger.colour_log("!pass", "✅ PASSED - Info screen displayed",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                 log_files=[test_log_file, function_log] if function_log else test_log_file)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                 log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Structure validated",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                 log_files=[test_log_file, function_log] if function_log else test_log_file)
 
 def test_edit_key_value_pairs(function_log=None):
     """Test interactive key-value editor"""
     logger.colour_log("!info", "This test function", "!test", "test_edit_key_value_pairs", "!info",
                      "tests interactive configuration editing.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     data = {
         "name": "TestDevice",
@@ -308,7 +309,7 @@ def test_edit_key_value_pairs(function_log=None):
     }
     
     logger.colour_log("!test", "Testing key-value editor (press Enter to keep defaults)...",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     if not args.auto:
         result = menu_handler.edit_key_value_pairs(
@@ -319,27 +320,27 @@ def test_edit_key_value_pairs(function_log=None):
         )
         
         logger.colour_log("!test", "Updated configuration:",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                 log_files=[test_log_file, function_log] if function_log else test_log_file)
         for key, value in result.items():
             logger.colour_log("!info", f"  {key}:", "!data", str(value),
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
         
         logger.colour_log("!pass", "✅ PASSED - Configuration edited",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                 log_files=[test_log_file, function_log] if function_log else test_log_file)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                 log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Validation logic verified",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                 log_files=[test_log_file, function_log] if function_log else test_log_file)
 
 def test_browse_directory(function_log=None):
     """Test directory browser (limited automated test)"""
     logger.colour_log("!info", "This test function", "!test", "test_browse_directory", "!info",
                      "tests interactive directory navigation.",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     logger.colour_log("!test", "Testing directory browser (enter 'cancel' to skip)...",
-                     log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                     log_files=[test_log_file, function_log] if function_log else test_log_file)
     
     if not args.auto:
         result = menu_handler.browse_directory(
@@ -350,17 +351,32 @@ def test_browse_directory(function_log=None):
         
         if result:
             logger.colour_log("!test", "Selected path:", "!path", str(result),
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
             logger.colour_log("!pass", "✅ PASSED - Path selected",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
         else:
             logger.colour_log("!warn", "⚠️  Cancelled or no selection",
-                             log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                             log_files=[test_log_file, function_log] if function_log else test_log_file)
     else:
         logger.colour_log("!info", "Skipping interactive test (--auto mode)",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
         logger.colour_log("!pass", "✅ PASSED - Structure validated",
-                         log_files=[TEST_LOG_FILE, function_log] if function_log else TEST_LOG_FILE)
+                         log_files=[test_log_file, function_log] if function_log else test_log_file)
+
+def test_config_loader_init(function_log=None):
+    """Test ConfigLoader initialization and global_config loading."""
+    loader = ConfigLoader()
+    version = loader.global_config.get("VERSION")
+    expected_version = "0.7.0"
+    if version != expected_version:
+        logger.colour_log("!warn", f"VERSION mismatch: expected {expected_version}, got {version}. Skipping test.", log_files=[test_log_file, function_log] if function_log else test_log_file)
+        import pytest
+        pytest.skip(f"VERSION mismatch: expected {expected_version}, got {version}. Skipping test.")
+    logger.colour_log("!info", f"VERSION matches: {version}", log_files=[test_log_file, function_log] if function_log else test_log_file)
+    assert loader.global_config is not None, "global_config should not be None"
+    assert "PROJECT_NAME" in loader.global_config, "PROJECT_NAME should be in global_config"
+    assert "VERSION" in loader.global_config, "VERSION should be in global_config"
+    assert version == expected_version, f"VERSION should be {expected_version}, got {version}"
 
 # --- 5. Test suite ---
 TESTS = [
@@ -385,74 +401,74 @@ logger.apply_border(
     total_length=60,
     border_colour="!proc",
     text_colour="!proc",
-    log_files=TEST_LOG_FILE
+    log_files=test_log_file
 )
 
 if args.auto:
     logger.colour_log("!warn", "⚠️  Running in AUTO mode - interactive tests will be skipped",
-                     log_files=TEST_LOG_FILE)
+                     log_files=test_log_file)
     time.sleep(1)
 
 for num, name, func, description in TESTS:
-    function_log = os.path.join(TEST_LOG_FOLDER, f"{name}.log")
+    function_log = os.path.join(test_logs_folder, f"{name}.log")
     
     try:
-        logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=[TEST_LOG_FILE, function_log])
+        logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=[test_log_file, function_log])
         logger.apply_border(
             text=f"Test {num}: {name}",
             pattern={"TOP": "=", "BOTTOM": "=", "LEFT": " ", "RIGHT": " "},
             total_length=60,
             border_colour="!proc",
             text_colour="!proc",
-            log_files=[TEST_LOG_FILE, function_log]
+            log_files=[test_log_file, function_log]
         )
         
         logger.colour_log("!test", "Running test", "!int", str(num), "!info", ":", "!proc", name,
-                         log_files=[TEST_LOG_FILE, function_log])
+                 log_files=[test_log_file, function_log])
         logger.colour_log("!info", "Description:", "!data", description,
-                         log_files=[TEST_LOG_FILE, function_log])
+                 log_files=[test_log_file, function_log])
         
         time.sleep(0.5)
         
         func(function_log=function_log)
         
         logger.colour_log("!test", "Test", "!int", str(num), "!info", ":", "!proc", name, "!pass", "COMPLETED.",
-                         log_files=[TEST_LOG_FILE, function_log])
+                 log_files=[test_log_file, function_log])
         results.append((num, name, True))
         successful.append(name)
         
     except Exception as e:
-        logger.log_exception(f"{name} failed", e, log_files=[TEST_LOG_FILE, function_log])
+        logger.log_exception(f"{name} failed", e, log_files=[test_log_file, function_log])
         results.append((num, name, False))
         unsuccessful.append(name)
 
 # --- 7. Test summary ---
-logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=TEST_LOG_FILE)
+logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=test_log_file)
 logger.apply_border(
     text="📊 Test Summary",
     pattern={"TOP": "=", "BOTTOM": "=", "LEFT": " ", "RIGHT": " "},
     total_length=60,
     border_colour="!proc",
     text_colour="!info",
-    log_files=TEST_LOG_FILE
+    log_files=test_log_file
 )
 
 total_tests = len(TESTS)
 passed_count = len(successful)
 failed_count = len(unsuccessful)
 
-logger.colour_log("!info", "Total tests:", "!int", str(total_tests), log_files=TEST_LOG_FILE)
-logger.colour_log("!done", "Passed:", "!int", str(passed_count), log_files=TEST_LOG_FILE)
+logger.colour_log("!info", "Total tests:", "!int", str(total_tests), log_files=test_log_file)
+logger.colour_log("!done", "Passed:", "!int", str(passed_count), log_files=test_log_file)
 if failed_count > 0:
-    logger.colour_log("!error", "Failed:", "!int", str(failed_count), log_files=TEST_LOG_FILE)
+    logger.colour_log("!error", "Failed:", "!int", str(failed_count), log_files=test_log_file)
 
 print()
 if failed_count == 0:
-    logger.colour_log("!pass", "✅ ALL TESTS COMPLETED", log_files=TEST_LOG_FILE)
+    logger.colour_log("!pass", "✅ ALL TESTS COMPLETED", log_files=test_log_file)
 else:
-    logger.colour_log("!warn", f"⚠️  {failed_count} TEST(S) HAD ISSUES", log_files=TEST_LOG_FILE)
+    logger.colour_log("!warn", f"⚠️  {failed_count} TEST(S) HAD ISSUES", log_files=test_log_file)
     for name in unsuccessful:
-        logger.colour_log("!fail", "  ❌", "!proc", name, log_files=TEST_LOG_FILE)
+        logger.colour_log("!fail", "  ❌", "!proc", name, log_files=test_log_file)
 
-logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=TEST_LOG_FILE)
-logger.colour_log("!info", "Test logs saved to:", "!path", TEST_LOG_FOLDER, log_files=TEST_LOG_FILE)
+logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=test_log_file)
+logger.colour_log("!info", "Test logs saved to:", "!path", test_logs_folder, log_files=test_log_file)

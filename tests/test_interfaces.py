@@ -1,5 +1,6 @@
 """
 Tests for tUilKit interfaces: ConfigLoader, ColourManager, Logger, FileSystem.
+ConfigLoader now loads from tUilKit_CONFIG.json.
 """
 
 import sys
@@ -18,27 +19,24 @@ base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
 if base_dir not in sys.path:
     sys.path.insert(0, base_dir)
 
+
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 import os
 import json
 import time
 import argparse
 from datetime import datetime
 
-COLOUR_CONFIG_PATH = os.path.join(base_dir, "tUilKit", "config", "COLOURS.json")
-BORDER_PATTERN_PATH = os.path.join(base_dir, "tUilKit", "config", "BORDER_PATTERNS.json")
-
-with open(COLOUR_CONFIG_PATH, "r") as f:
-    colour_config = json.load(f)
-
-with open(BORDER_PATTERN_PATH, "r") as f:
-    border_patterns = json.load(f)
-
-colour_manager = ColourManager(colour_config)
-logger = Logger(colour_manager)
 config_loader = ConfigLoader()
+colour_config = config_loader.load_colour_config()
+border_patterns = config_loader.load_border_patterns_config()
+colour_manager = ColourManager(colour_config)
+tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
+test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
+test_log_file = os.path.join(test_logs_folder, "test_interfaces_output.log")
+logger = Logger(colour_manager, log_files={"INTERFACES": test_log_file})
 file_system = FileSystem(logger)
 
 TEST_LOG_FOLDER = os.path.join(os.path.dirname(__file__), "testOutputLogs")
@@ -71,10 +69,10 @@ if args.clean:
 # --- 3. Test functions ---
 
 def test_config_loader(function_log=None):
-    # Test locating and logging the path of the global config file
-    global_config_path = config_loader.get_json_path('GLOBAL_CONFIG.json')
+    # Test locating and logging the path of the tUilKit config file
+    global_config_path = config_loader.get_json_path('tUilKit_CONFIG.json')
     log_files = [f for f in [TEST_LOG_FILE, function_log] if f]
-    logger.colour_log("!file", colour_manager.colour_path(global_config_path), "!info", "Global config file path.", log_files=log_files)
+    logger.colour_log("!file", colour_manager.colour_path(global_config_path), "!info", "tUilKit config file path.", log_files=log_files)
 
     # Log paths of log files
     log_files = config_loader.global_config.get("LOG_FILES", {})

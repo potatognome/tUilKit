@@ -17,16 +17,37 @@ from tUilKit.dict.DICT_COLOURS import RGB
 from tUilKit.dict.DICT_CODES import ESCAPES, COMMANDS
 from tUilKit.interfaces.logger_interface import LoggerInterface
 from tUilKit.interfaces.colour_interface import ColourInterface
-from tUilKit.config.config import ConfigLoader
+from tUilKit.utils.config import ConfigLoader
 
 # ANSI ESCAPE CODE PREFIXES for colour coding f-strings
 SET_FG_COLOUR = ESCAPES['OCTAL'] + COMMANDS['FGC']
 SET_BG_COLOUR = ESCAPES['OCTAL'] + COMMANDS['BGC']
 ANSI_RESET = ESCAPES['OCTAL'] + COMMANDS['RESET']
 
-config_loader = ConfigLoader()
 
-LOG_FILES = config_loader.global_config.get("LOG_FILES", {})
+import copy
+config_loader = ConfigLoader()
+LOG_FILES = copy.deepcopy(config_loader.global_config.get("LOG_FILES", {}))
+root_modes = config_loader.global_config.get("ROOT_MODES", {})
+log_root_mode = root_modes.get("LOGS", "project")
+if log_root_mode == "workspace":
+    workspace_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
+    for key in LOG_FILES:
+        if not os.path.isabs(LOG_FILES[key]):
+            app_name = LOG_FILES[key].split("/")[1] if "/" in LOG_FILES[key] else "tUilKit"
+            log_name = os.path.basename(LOG_FILES[key])
+            LOG_FILES[key] = os.path.join(workspace_root, LOG_FILES[key])
+elif log_root_mode == "auto":
+    # For 'auto', default to workspace root
+    workspace_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
+    for key in LOG_FILES:
+        if not os.path.isabs(LOG_FILES[key]):
+            LOG_FILES[key] = os.path.join(workspace_root, LOG_FILES[key])
+elif log_root_mode == "project":
+    project_root = os.path.abspath(os.path.join(os.getcwd(), "Dev", "tUilKit"))
+    for key in LOG_FILES:
+        if not os.path.isabs(LOG_FILES[key]):
+            LOG_FILES[key] = os.path.join(project_root, LOG_FILES[key])
 
 class ColourManager(ColourInterface):
     def __init__(self, colour_config: dict):
@@ -158,15 +179,24 @@ class ColourManager(ColourInterface):
 class Logger(LoggerInterface):
     def __init__(self, colour_manager: ColourManager, log_files=None):
         self.Colour_Mgr = colour_manager
-        self.log_files = log_files or LOG_FILES.copy()
         self._log_queue = []
-        # Load log categories from config, with fallback defaults
+        self.dual_logging = bool(os.environ.get("TUILKIT_DUAL_LOGGING", "1") == "1")
         self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {
             "default": ["MASTER", "SESSION"],
             "error": ["ERROR", "SESSION", "MASTER"],
             "fs": ["MASTER", "SESSION", "FS"],
             "init": ["INIT", "SESSION", "MASTER"]
         })
+        self.test_mode = bool(os.environ.get("TUILKIT_TEST_MODE", "0") == "1")
+        if self.test_mode:
+            tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
+            test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
+            self.log_files = {}
+            for key in LOG_FILES:
+                log_name = os.path.basename(LOG_FILES[key])
+                self.log_files[key] = os.path.join(test_logs_folder, log_name)
+        else:
+            self.log_files = log_files or copy.deepcopy(LOG_FILES)
         # Clean the session log on initialization to ensure it only contains the current execution
         self._clean_session_log()
 
@@ -215,7 +245,7 @@ class Logger(LoggerInterface):
         else:
             return "", ""
 
-    def log_message(self, message: str, log_files = None, end: str = "\n", log_to: str = "both", time_stamp: bool = True):
+    def log_message(self, message: str, log_files = None, end: str = "\n", log_to: str = "both", time_stamp: bool = True, dual_log: bool = None):
         """
         log_files: list of str or str or None
         log_to: "both", "file", "term", "queue"
@@ -225,15 +255,25 @@ class Logger(LoggerInterface):
             log_files = [log_files]
         elif log_files is None:
             log_files = []
-        
+
         if time_stamp:
             date, time = self.split_time_string(datetime.now().strftime('%Y-%m-%d %H:%M:%S'))
             # Apply colored timestamp with proper reset before message
             timestamp_str = self.Colour_Mgr.colour_fstr("!date", date, "!time", time)
             message = f"{timestamp_str} {message}"
-        
-        if log_to in ("file", "both") and log_files:
-            for log_file in log_files:
+
+        # Dual logging: if SESSION log, also log to tUilKit central if not already
+        effective_log_files = list(log_files)
+        if (dual_log if dual_log is not None else self.dual_logging):
+            session_log = self.log_files.get("SESSION")
+            tuilkit_session = os.path.join(".logs", "tUilKit", "SESSION.log")
+            if session_log and session_log not in effective_log_files:
+                effective_log_files.append(session_log)
+            if tuilkit_session not in effective_log_files:
+                effective_log_files.append(tuilkit_session)
+
+        if log_to in ("file", "both") and effective_log_files:
+            for log_file in effective_log_files:
                 log_dir = os.path.dirname(log_file)
                 if not os.path.exists(log_dir):
                     # Queue the message if the log folder doesn't exist
@@ -246,12 +286,12 @@ class Logger(LoggerInterface):
                         self._log_queue.append((f"Log file created: {log_file}", log_file, "\n"))
                     with open(log_file, 'a', encoding='utf-8') as log:
                         log.write(self.Colour_Mgr.strip_ansi(message) + end)
-        
+
         if log_to in ("term", "both"):
             print(message, end=end)
-        
-        if log_to == "queue" and log_files:
-            for log_file in log_files:
+
+        if log_to == "queue" and effective_log_files:
+            for log_file in effective_log_files:
                 self._log_queue.append((message, log_file, end))
 
     def flush_log_queue(self, log_file: str):
