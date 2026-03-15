@@ -8,14 +8,23 @@ import argparse
 import time
 import shutil
 import tempfile
+import json
 from datetime import datetime
 from tUilKit.utils.fs import normalize_path, colourize_path
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Dev', 'tUilKit', 'src')))
-try:
-    from tUilKit.utils.config import ConfigLoader
-except ModuleNotFoundError:
-    # Fallback for local test runs
-    from utils.config import ConfigLoader
+
+# --- Load absolute paths from test_paths.json ---
+paths_json = os.path.join(os.path.dirname(__file__), "test_paths.json")
+with open(paths_json, "r") as f:
+    paths = json.load(f)
+tests_folder = paths["tests_folder"]
+config_folder = paths["config_folder"]
+tUilKit_src_folder = paths["tUilKit_src_folder"]
+test_logs_folder = paths["test_logs_folder"]
+
+# --- Ensure tUilKit src is in sys.path for absolute imports ---
+if tUilKit_src_folder not in sys.path:
+    sys.path.insert(0, tUilKit_src_folder)
+from tUilKit.utils.config import ConfigLoader
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
 
@@ -33,7 +42,7 @@ file_system = FileSystem(logger)
 
 # --- 2.5. Test Log Folder Resolution ---
 TESTS_OPTIONS = config_loader.global_config.get("TESTS_OPTIONS", {})
-TEST_LOGS_FOLDER = TESTS_OPTIONS.get("TEST_LOGS_FOLDER", ".testlogs")
+TEST_LOGS_FOLDER = test_logs_folder
 TEST_LOG_FILE = os.path.join(TEST_LOGS_FOLDER, "test_config.log")
 if not os.path.exists(TEST_LOGS_FOLDER):
     os.makedirs(TEST_LOGS_FOLDER, exist_ok=True)
@@ -84,11 +93,11 @@ def test_config_loader_init(function_log=None):
         assert "VERSION" in loader.global_config, "VERSION should be in global_config"
         assert loader.global_config["VERSION"] == "0.7.0", f"VERSION should be 0.7.0, got {loader.global_config['VERSION']}"
         
-        logger.colour_log("!proc", "ConfigLoader initialization tests passed.", log_files=test_log_file)
+        logger.colour_log("!proc", "ConfigLoader initialization tests passed.", log_files=TEST_LOG_FILE)
         if function_log:
             logger.colour_log("!proc", "ConfigLoader initialization tests passed.", log_files=function_log, log_to="file")
     except AssertionError as e:
-        logger.log_exception("test_config_loader_init failed", e, log_files=[test_log_file, function_log] if function_log else [test_log_file])
+        logger.log_exception("test_config_loader_init failed", e, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
         raise
 
 def test_get_json_path(function_log=None):
