@@ -4,11 +4,6 @@ Factory functions for creating and initializing tUilKit components.
 Encapsulates setup logic and provides convenient one-liner instantiation.
 """
 
-_config_loader = None
-_colour_manager = None
-_logger = None
-_file_system = None
-_cli_menu_handler = None
 
 def get_config_loader():
     global _config_loader
@@ -16,6 +11,12 @@ def get_config_loader():
         from tUilKit.utils.config import ConfigLoader
         _config_loader = ConfigLoader()
     return _config_loader
+
+_config_loader = None
+_colour_manager = None
+_logger = None
+_file_system = None
+_cli_menu_handler = None
 
 def get_colour_manager():
     global _colour_manager
