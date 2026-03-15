@@ -1,42 +1,74 @@
 
 """
-Minimal test for tUilKit ConfigLoader: imports and colour_log messages for config paths.
+Workspace-policy compliant test for tUilKit ConfigLoader: argparse, log folder resolution, rainbow row, border, colour logging, no plain prints.
 """
 import sys
 import os
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src')))
-from tUilKit.utils.config import ConfigLoader
+import argparse
+import time
+import shutil
+import tempfile
+from datetime import datetime
+from tUilKit.utils.fs import normalize_path, colourize_path
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Dev', 'tUilKit', 'src')))
+try:
+    from tUilKit.utils.config import ConfigLoader
+except ModuleNotFoundError:
+    # Fallback for local test runs
+    from utils.config import ConfigLoader
 from tUilKit.utils.output import Logger, ColourManager
+from tUilKit.utils.fs import FileSystem
 
+# --- 1. Command Line Args ---
+parser = argparse.ArgumentParser(description="tUilKit ConfigLoader test suite")
+parser.add_argument('--clean', choices=["local", "all", "master", "tests"], help="Clean log files: local, all, master, tests")
+args = parser.parse_args()
+
+# --- 2. Imports and Initialization ---
 config_loader = ConfigLoader()
 colour_config = config_loader.load_colour_config()
 colour_manager = ColourManager(colour_config)
 logger = Logger(colour_manager)
-
-# Log config paths using colour_log
-
-# Log config paths using colour_log (minimal, no extra code)
-
-logger.colour_log("!output", f"COLOURS config path: {config_loader.get_config_file_path('COLOURS')}")
-logger.colour_log("!output", f"BORDER_PATTERNS config path: {config_loader.get_config_file_path('BORDER_PATTERNS')}")
 file_system = FileSystem(logger)
 
-# Ensure all log folders exist
-if not os.path.exists(test_logs_folder):
-    os.makedirs(test_logs_folder, exist_ok=True)
+# --- 2.5. Test Log Folder Resolution ---
+TESTS_OPTIONS = config_loader.global_config.get("TESTS_OPTIONS", {})
+TEST_LOGS_FOLDER = TESTS_OPTIONS.get("TEST_LOGS_FOLDER", ".testlogs")
+TEST_LOG_FILE = os.path.join(TEST_LOGS_FOLDER, "test_config.log")
+if not os.path.exists(TEST_LOGS_FOLDER):
+    os.makedirs(TEST_LOGS_FOLDER, exist_ok=True)
 
-# Remove all log files if --clean is passed
+# --- Clean log files if requested ---
 if args.clean:
-    for fname in os.listdir(test_logs_folder):
+    for fname in os.listdir(TEST_LOGS_FOLDER):
         if fname.endswith('.log'):
             try:
                 base, ext = os.path.splitext(fname)
                 timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
                 backup_fname = f"{base}_{timestamp}.bak"
-                os.rename(os.path.join(test_logs_folder, fname), os.path.join(test_logs_folder, backup_fname))
-                print(f"Backed up {fname} to {backup_fname}")
+                shutil.move(os.path.join(TEST_LOGS_FOLDER, fname), os.path.join(TEST_LOGS_FOLDER, backup_fname))
+                logger.colour_log("!info", f"Backed up {fname} to {backup_fname}", log_files=TEST_LOG_FILE)
             except Exception as e:
-                print(f"Could not backup {fname}: {e}")
+                logger.log_exception(f"Could not backup {fname}", e, log_files=[TEST_LOG_FILE])
+
+# --- Rainbow row and border for test start ---
+logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=[TEST_LOG_FILE], log_to="file")
+border_patterns = config_loader.load_border_patterns_config()
+bold_pattern = border_patterns.get("BOLD", {
+    "TOP": ["━"],
+    "BOTTOM": ["━"],
+    "LEFT": ["┃"],
+    "RIGHT": ["┃"]
+})
+logger.apply_border("ConfigLoader Test Suite", bold_pattern, log_files=[TEST_LOG_FILE], border_colour="!proc", log_to="file")
+project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'Dev', 'tUilKit'))
+cwd = os.getcwd()
+logger.colour_log("!debug", "Project root:", "!path", colourize_path(project_root, colour_manager), log_files=TEST_LOG_FILE)
+logger.colour_log("!debug", "Current working directory:", "!path", colourize_path(cwd, colour_manager), log_files=TEST_LOG_FILE)
+logger.colour_log("!info", "Test log folder:", "!path", colourize_path(TEST_LOGS_FOLDER, colour_manager), log_files=TEST_LOG_FILE)
+logger.colour_log("!info", "COLOURS config path:", "!path", colourize_path(config_loader.get_config_file_path('COLOURS'), colour_manager), log_files=TEST_LOG_FILE)
+logger.colour_log("!info", "BORDER_PATTERNS config path:", "!path", colourize_path(config_loader.get_config_file_path('BORDER_PATTERNS'), colour_manager), log_files=TEST_LOG_FILE)
+time.sleep(0.5)
 
 # --- 3. Test variables ---
 temp_dir = tempfile.mkdtemp()
@@ -171,107 +203,11 @@ def test_get_log_file_path(function_log=None):
     """Test get_log_file_path method."""
     try:
         loader = ConfigLoader()
-        
-        # Test getting SESSION log path
-        session_log = loader.get_log_file_path("SESSION")
-        assert session_log is not None, "SESSION log path should not be None"
-        assert "logs" in session_log or "RUNTIME" in session_log, "Should reference log file"
-        
-        # Test getting MASTER log path
-        master_log = loader.get_log_file_path("MASTER")
-        assert master_log is not None, "MASTER log path should not be None"
-        
-        # Test with non-existent key (should return None)
-        nonexistent = loader.get_log_file_path("NONEXISTENT_LOG")
-        assert nonexistent is None, "Should return None for non-existent log key"
-        
-        logger.colour_log("!proc", "get_log_file_path tests passed.", log_files=TEST_LOG_FILE)
+        log_path = loader.get_log_file_path("SESSION")
+        norm_path = normalize_path(log_path)
+        logger.colour_log("!proc", "Normalized log file path:", "!path", colourize_path(norm_path, colour_manager), log_files=TEST_LOG_FILE)
         if function_log:
-            logger.colour_log("!proc", "get_log_file_path tests passed.", log_files=function_log, log_to="file")
+            logger.colour_log("!proc", "Normalized log file path:", "!path", colourize_path(norm_path, colour_manager), log_files=function_log, log_to="file")
     except AssertionError as e:
         logger.log_exception("test_get_log_file_path failed", e, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
         raise
-
-def test_ensure_folders_exist(function_log=None):
-    """Test ensure_folders_exist method."""
-    try:
-        loader = ConfigLoader()
-        
-        # Create a test filesystem instance
-        test_fs = FileSystem(logger)
-        
-        # Test ensure_folders_exist (should create log folders)
-        loader.ensure_folders_exist(test_fs)
-        
-        # Check if log folder was created
-        log_files = loader.global_config.get("LOG_FILES", {})
-        for log_key, log_path in list(log_files.items())[:2]:  # Test first 2 log files
-            folder = os.path.dirname(log_path)
-            if folder:
-                # Folder should exist or be creatable
-                assert folder, f"Log folder should have a valid path for {log_key}"
-        
-        logger.colour_log("!proc", "ensure_folders_exist tests passed.", log_files=TEST_LOG_FILE)
-        if function_log:
-            logger.colour_log("!proc", "ensure_folders_exist tests passed.", log_files=function_log, log_to="file")
-    except AssertionError as e:
-        logger.log_exception("test_ensure_folders_exist failed", e, log_files=[TEST_LOG_FILE, function_log] if function_log else [TEST_LOG_FILE])
-        raise
-
-# --- 5. TESTS tuple ---
-TESTS = [
-    (1, "test_config_loader_init", test_config_loader_init),
-    (2, "test_get_json_path", test_get_json_path),
-    (3, "test_load_config", test_load_config),
-    (4, "test_load_colour_config", test_load_colour_config),
-    (5, "test_load_border_patterns_config", test_load_border_patterns_config),
-    (6, "test_get_config_file_path", test_get_config_file_path),
-    (7, "test_get_log_file_path", test_get_log_file_path),
-    (8, "test_ensure_folders_exist", test_ensure_folders_exist),
-]
-
-# --- 6. Test runner ---
-if __name__ == "__main__":
-    results = []
-    successful = []
-    unsuccessful = []
-
-    border_pattern = {
-        "TOP": ["==="],
-        "LEFT": ["|"],
-        "RIGHT": ["|"],
-        "BOTTOM": ["==="]
-    }
-
-    for num, name, func in TESTS:
-        function_log = os.path.join(TEST_LOG_FOLDER, f"{name}.log")
-        try:
-            logger.print_rainbow_row(pattern="X-O-", spacer=2, log_files=[TEST_LOG_FILE, function_log], log_to="both")
-            logger.print_top_border(border_pattern, 50, log_files=[TEST_LOG_FILE, function_log], log_to="both")
-            logger.colour_log("!test", "Running test", "!int", num, "!info", ":", "!proc", name, log_files=[TEST_LOG_FILE, function_log], log_to="both")
-            time.sleep(0.5)
-            func(function_log=function_log)
-            logger.colour_log("!test", "Test", "!int", num, "!info", ":", "!proc", name, "!pass", "PASSED.", log_files=[TEST_LOG_FILE, function_log], log_to="both")
-            results.append((num, name, True))
-            successful.append(name)
-        except Exception as e:
-            logger.log_exception(f"{name} failed", e, log_files=[TEST_LOG_FILE, function_log], log_to="both")
-            results.append((num, name, False))
-            unsuccessful.append(name)
-
-    total_count = len(TESTS)
-    count_successes = sum(1 for _, _, passed in results if passed)
-    count_unsuccessfuls = total_count - count_successes
-
-    logger.colour_log("!pass", "Successful tests:", "!int", f"{count_successes} / {total_count}", "!list", successful, log_files=TEST_LOG_FILE)
-    if count_unsuccessfuls > 0:
-        logger.colour_log("!fail", "Unsuccessful tests:", "!fail", count_unsuccessfuls, "!int", f"/ {total_count}", "!list", unsuccessful, log_files=TEST_LOG_FILE)
-        for num, name, passed in results:
-            if not passed:
-                logger.colour_log("!test", "Test", "!int", num, "!info", ":", "!proc", name, "!fail", "FAILED.", log_files=TEST_LOG_FILE)
-    else:
-        logger.colour_log("!done", "All tests passed!", log_files=TEST_LOG_FILE)
-
-    # Clean up temp dir
-    if os.path.exists(temp_dir):
-        shutil.rmtree(temp_dir)

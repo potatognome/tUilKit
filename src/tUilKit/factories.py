@@ -4,6 +4,11 @@ Factory functions for creating and initializing tUilKit components.
 Encapsulates setup logic and provides convenient one-liner instantiation.
 """
 
+_config_loader = None
+_colour_manager = None
+_logger = None
+_file_system = None
+_cli_menu_handler = None
 
 def get_config_loader():
     global _config_loader
@@ -12,11 +17,6 @@ def get_config_loader():
         _config_loader = ConfigLoader()
     return _config_loader
 
-_config_loader = None
-_colour_manager = None
-_logger = None
-_file_system = None
-_cli_menu_handler = None
 
 def get_colour_manager():
     global _colour_manager
@@ -25,12 +25,14 @@ def get_colour_manager():
         _colour_manager = ColourManager(get_config_loader().load_colour_config())
     return _colour_manager
 
+
 def get_logger():
     global _logger
     if _logger is None:
         from tUilKit.utils.output import Logger
         _logger = Logger(get_colour_manager())
     return _logger
+
 
 def get_file_system():
     global _file_system
@@ -39,12 +41,14 @@ def get_file_system():
         _file_system = FileSystem(logger=get_logger())
     return _file_system
 
+
 def get_cli_menu_handler():
     global _cli_menu_handler
     if _cli_menu_handler is None:
         from tUilKit.utils.cli_menus import CLIMenuHandler
         _cli_menu_handler = CLIMenuHandler(logger=get_logger())
     return _cli_menu_handler
+
 
 def reset_factories():
     global _config_loader, _colour_manager, _logger, _file_system, _cli_menu_handler
@@ -53,14 +57,6 @@ def reset_factories():
     _logger = None
     _file_system = None
     _cli_menu_handler = None
-    """
-    Get or create the singleton ConfigLoader instance.
-    Loads tUilKit_CONFIG.json and provides access to all configuration.
-    """
-    global _config_loader
-    if _config_loader is None:
-        _config_loader = ConfigLoader()
-    return _config_loader
 
 
 def get_colour_manager():

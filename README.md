@@ -1,6 +1,20 @@
+tUilKit
+
 # Project Name
 tUilKit
-**Current version: 1.1.0**
+
+**Current version: 1.1.1**
+
+## Recent Enhancements (v1.1.1)
+
+- **Modular Workspace Log/Test Log Path Resolution**: Log and test log paths now use WORKSPACE_ROOT_PATH and RELATIVE_FOLDER_PATHS when ROOT_MODES is set to "workspace". All log/test log utilities are fully config-driven and workspace-aware.
+- **ConfigLoader Update**: Added get_log_file_path and get_test_log_file_path methods for modular path resolution.
+- **SHARED_CONFIG_FILES Support**: Loader now resolves shared config files from modular folders, supporting workspace/project root and dev/test environments.
+- **Factories Singleton Fix**: Cleaned up factories.py to ensure proper global statement placement and singleton pattern.
+- **Minimal ConfigLoader Test**: Added `test_config_minimal.py` for basic config loading and path resolution validation.
+- **Test Config Isolation**: Created `tests/config/GLOBAL_SHARED.d/COLOURS.json` for isolated test config loading.
+- **Test Environment**: Tests now use local config if present, otherwise fall back to workspace/project config.
+
 
 tUilKit (formerly utilsbase) is a modular Python toolkit providing utility functions, dictionaries, and configuration for development projects.  
 The package is structured around clear **interfaces** for logging, colour management, file system operations, and configuration loading, making it easy to extend or swap implementations.  
@@ -13,13 +27,16 @@ tUilKit is organized into three main components:
 
 
 ```
-/src
-        /config
+    /config
+        tuIlKit_CONFIG.json             # Folder paths and logging/display options
+        /GLOBAL_SHARED.d                # Shared project level config
             BORDER_PATTERNS.json        # Border Patterns
-            COLUMN_MAPPING.json         # DataFrame column mapping
             COLOURS.json                # Foreground text COLOUR_KEY and RGB Reference
-            GLOBAL_CONFIG.json          # Folder paths and logging/display options
-            config.py                   # ConfigLoader implementation
+    /src
+        /config                         # Default global config files (deployed by H3l3n)
+            BORDER_PATTERNS.json        # Border Patterns
+            COLOURS.json                # Foreground text COLOUR_KEY and RGB Reference
+            COLUMN_MAPPING.json         # DataFrame column mapping
         /dict
             DICT_CODES.py               # ANSI escape code parts for sequencing
             DICT_COLOURS.py             # RGB ANSI escape codes for sequencing
@@ -30,6 +47,7 @@ tUilKit is organized into three main components:
             file_system_interface.py    # FileSystemInterface (abstract base class)
             logger_interface.py         # LoggerInterface (abstract base class)
         /utils
+            config.py                   # ConfigLoader implementation
             fs.py                       # Core - File system operations (FileSystem)
             output.py                   # Core - Printing/Debugging/Logging (Logger, ColourManager)
             sheets.py                   # Primary - CSV/XLSX utilities
@@ -44,8 +62,11 @@ tUilKit is organized into three main components:
         ColourKey_Usage_Guide.md              # Colour key addendum
         FileSystem_Usage_Guide.md             # File system addendum
     /tests
-        /testOutputLogs
+        /config
+            /GLOBAL_SHARED.d
+                COLOURS.json          # Isolated test config for colour keys
         test_config.py                # ConfigLoader + config paths
+        test_config_minimal.py        # Minimal ConfigLoader test
         test_output.py                # Output/logging functions
         test_fs_ops.py                # File system operations
         test_multi_category.py        # Multi-category logging

@@ -1,3 +1,13 @@
+## [1.1.1] - 2026-03-14
+### Added
+- **Minimal ConfigLoader Test**: Added `test_config_minimal.py` for basic config loading and path resolution validation.
+- **Test Config Isolation**: Created `tests/config/GLOBAL_SHARED.d/COLOURS.json` for isolated test config loading.
+
+### Changed
+- **Factories Singleton Fix**: Cleaned up factories.py to ensure proper global statement placement and singleton pattern.
+- **Test Environment**: Tests now use local config if present, otherwise fall back to workspace/project config.
+- **Version bump**: Updated tUilKit version from 1.1.0 to 1.1.1 for test improvements and bugfixes.
+
 ## [1.1.0] - 2026-03-13
 VERSION UPDATED MANUALLY: 1.1.3 -> 1.1.0
 
@@ -5,7 +15,7 @@ VERSION UPDATED MANUALLY: 1.1.3 -> 1.1.0
 - **Modular Workspace Log/Test Log Path Resolution**: Log and test log paths now use WORKSPACE_ROOT_PATH and RELATIVE_FOLDER_PATHS when ROOT_MODES is set to "workspace". All log/test log utilities are fully config-driven and workspace-aware.
 - **ConfigLoader Update**: Added get_log_file_path and get_test_log_file_path methods for modular path resolution.
 - **SHARED_CONFIG_FILES Support**: Loader now resolves shared config files from modular folders, supporting workspace/project root and dev/test environments.
-- **Version bump**: Updated tUilKit version from 1.0.3 to 1.1.3 for modular config and log path improvements.
+- **Version bump**: Updated tUilKit version from 1.0.3 to 1.1.0 for modular config and log path improvements.
 ## [0.9.8] - 2026-03-13
 
 ### Changed
