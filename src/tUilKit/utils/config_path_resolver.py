@@ -11,32 +11,51 @@ class ConfigPathResolver:
         self.project_root_path = project_root_path
         self.relative_folder_paths = relative_folder_paths or {}
 
-    def resolve_config_path(self, file_name):
+    def resolve_config_path(self, file_name, verbose=False):
+        if verbose:
+            print(f"[ConfigPathResolver VERBOSE] config_root_mode: {self.config_root_mode}")
+            print(f"[ConfigPathResolver VERBOSE] workspace_root_path: {self.workspace_root_path}")
+            print(f"[ConfigPathResolver VERBOSE] project_root_path: {self.project_root_path}")
+            print(f"[ConfigPathResolver VERBOSE] file_name: {file_name}")
         # Root mode is default: workspace/project root first
         if self.config_root_mode == "workspace" and self.workspace_root_path:
             fallback = Path(self.workspace_root_path) / "config" / file_name
+            if verbose:
+                print(f"[ConfigPathResolver VERBOSE] Checking workspace config path: {fallback}")
             if fallback.exists():
                 return str(fallback)
         elif self.config_root_mode == "project" and self.project_root_path:
             fallback = Path(self.project_root_path) / "config" / file_name
+            if verbose:
+                print(f"[ConfigPathResolver VERBOSE] Checking project config path: {fallback}")
             if fallback.exists():
                 return str(fallback)
         # Fallback to cwd/config/parent if root mode fails
         current_dir = Path(os.getcwd())
         root_path = current_dir / file_name
+        if verbose:
+            print(f"[ConfigPathResolver VERBOSE] Checking cwd root path: {root_path}")
         if root_path.exists():
             return str(root_path)
         config_path = current_dir / "config" / file_name
+        if verbose:
+            print(f"[ConfigPathResolver VERBOSE] Checking cwd config path: {config_path}")
         if config_path.exists():
             return str(config_path)
         for parent in current_dir.parents:
             parent_config = parent / "config" / file_name
+            if verbose:
+                print(f"[ConfigPathResolver VERBOSE] Checking parent config path: {parent_config}")
             if parent_config.exists():
                 return str(parent_config)
         # Absolute fallback
         fallback_abs = os.path.abspath(os.path.join(os.getcwd(), "Dev", "tUilKit", "config", file_name))
+        if verbose:
+            print(f"[ConfigPathResolver VERBOSE] Checking absolute fallback: {fallback_abs}")
         if os.path.exists(fallback_abs):
             return fallback_abs
+        if verbose:
+            print(f"[ConfigPathResolver VERBOSE] No config path found for: {file_name}")
         return None
 
     def resolve_shared_config_path(self, config_key, shared_config_files, shared_folder):

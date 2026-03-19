@@ -9,18 +9,83 @@ from tUilKit.interfaces.file_system_interface import FileSystemInterface
 from tUilKit.utils.config_path_resolver import ConfigPathResolver
 
 class ConfigLoader(ConfigLoaderInterface):
-    def __init__(self):
-        config_path = self._bootstrap_config_path('tUilKit_CONFIG.json')
-        self.global_config = self.load_config(config_path)
-        root_modes = self.global_config.get("ROOT_MODES", {})
+    def __init__(self, verbose=False, config_path=None):
+        self.verbose = verbose
+        # Step 1: Bootstrap config path and root_mode
+        bootstrap_path, bootstrap_data = self._find_bootstrap_file()
+        self.bootstrap_path = bootstrap_path
+        self.bootstrap_data = bootstrap_data
+        self.root_mode = bootstrap_data.get("root_mode", "project")
+        self.config_path = self._resolve_config_path()
+        config_data = self._load_json(self.config_path)
+        self.global_config = config_data
+        paths_cfg = config_data.get("PATHS", {})
+        root_modes = config_data.get("ROOT_MODES", {})
         self.path_resolver = ConfigPathResolver(
-            config_root_mode=root_modes.get("CONFIG", "project"),
-            workspace_root_path=self.global_config.get("WORKSPACE_ROOT_PATH"),
-            project_root_path=self.global_config.get("PROJECT_ROOT_PATH"),
-            relative_folder_paths=self.global_config.get("RELATIVE_FOLDER_PATHS", {})
+            config_root_mode=root_modes.get("CONFIG", self.root_mode),
+            workspace_root_path=paths_cfg.get("WORKSPACE_ROOT_PATH", os.getcwd()),
+            project_root_path=paths_cfg.get("PROJECT_ROOT_PATH", os.getcwd()),
+            relative_folder_paths=config_data.get("RELATIVE_FOLDER_PATHS", {})
         )
 
+
+    def _find_bootstrap_file(self):
+        """
+        Find and load the bootstrap file (test_paths.json) for test override.
+        Returns (bootstrap_path, bootstrap_data)
+        """
+        cwd = os.getcwd()
+        # Check for test_paths.json (test override)
+        test_paths_path = os.path.join(cwd, "test_paths.json")
+        if os.path.exists(test_paths_path):
+            with open(test_paths_path, "r", encoding="utf-8") as f:
+                test_paths = json.load(f)
+            # Allow test_paths.json to specify a bootstrap_path or config_path
+            bootstrap_path = test_paths.get("bootstrap_path")
+            if bootstrap_path and os.path.exists(bootstrap_path):
+                if self.verbose:
+                    print(f"[ConfigLoader] Using bootstrap_path from test_paths.json: {bootstrap_path}")
+                with open(bootstrap_path, "r", encoding="utf-8") as f:
+                    bootstrap_data = json.load(f)
+                return bootstrap_path, bootstrap_data
+            # Fallback: synthesize bootstrap_data from test_paths.json
+            config_path = test_paths.get("config_path") or os.path.join(test_paths.get("tests_config_folder", cwd), "tUilKit_CONFIG.json")
+            bootstrap_data = {
+                "root_mode": "project",
+                "config_path": config_path
+            }
+            if self.verbose:
+                print(f"[ConfigLoader] Using test_paths.json for bootstrap: {bootstrap_data}")
+            return test_paths_path, bootstrap_data
+
+    def _resolve_config_path(self):
+        config_path = self.bootstrap_data.get("config_path")
+        if self.verbose:
+            print(f"[ConfigLoader VERBOSE] Bootstrap config_path: {config_path}")
+            print(f"[ConfigLoader VERBOSE] root_mode: {self.root_mode}")
+        if not config_path:
+            raise ValueError("No config_path in bootstrap file.")
+        # If not absolute, resolve relative to bootstrap file
+        if not os.path.isabs(config_path):
+            resolved_path = os.path.join(os.path.dirname(self.bootstrap_path), config_path)
+            if self.verbose:
+                print(f"[ConfigLoader VERBOSE] Resolved relative config_path: {resolved_path}")
+            config_path = resolved_path
+        if not os.path.exists(config_path):
+            raise FileNotFoundError(f"Config file not found: {config_path}")
+        if self.verbose:
+            print(f"[ConfigLoader VERBOSE] Final config_path: {config_path}")
+        return config_path
+
+    def _load_json(self, path):
+        if self.verbose:
+            print(f"[ConfigLoader] Loading JSON: {path}")
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+
     def load_config(self, json_file_path: str) -> dict:
+        if getattr(self, 'verbose', False):
+            print(f"[ConfigLoader VERBOSE] Opening config file: {json_file_path}")
         with open(json_file_path, 'r', encoding='utf-8') as f:
             return json.load(f)
 
@@ -32,11 +97,16 @@ class ConfigLoader(ConfigLoaderInterface):
                 file_system.validate_and_create_folder(folder, category="fs")
 
     def get_config_file_path(self, config_key: str) -> str:
-        shared_config_files = self.global_config.get("SHARED_CONFIG_FILES", {})
-        relative_paths = self.global_config.get("RELATIVE_FOLDER_PATHS", {})
-        shared_folder = relative_paths.get("SHARED", "config/GLOBAL_SHARED.d/")
-        if config_key in shared_config_files:
+        shared_config = self.global_config.get("SHARED_CONFIG", {})
+        shared_enabled = shared_config.get("ENABLED", False)
+        shared_path = shared_config.get("PATH", "GLOBAL_SHARED.d/")
+        shared_config_files = shared_config.get("SHARED_CONFIG_FILES", {})
+        if shared_enabled and config_key in shared_config_files:
+            workspace_root = self.global_config.get("PATHS", {}).get("WORKSPACE_ROOT_PATH", "")
+            shared_folder = os.path.join(workspace_root, shared_path)
             path = self.path_resolver.resolve_shared_config_path(config_key, shared_config_files, shared_folder)
+            if getattr(self, 'verbose', False):
+                print(f"[ConfigLoader VERBOSE] Resolved shared config path for '{config_key}': {path}")
             if path:
                 return path
             raise FileNotFoundError(f"Shared config file '{config_key}' not found.")
@@ -45,6 +115,8 @@ class ConfigLoader(ConfigLoaderInterface):
         if not relative_path:
             raise ValueError(f"Config file key '{config_key}' not found.")
         path = self.path_resolver.resolve_config_path(relative_path)
+        if getattr(self, 'verbose', False):
+            print(f"[ConfigLoader VERBOSE] Resolved config path for '{config_key}': {path}")
         if path:
             return path
         raise FileNotFoundError(f"Config file '{config_key}' not found.")
@@ -65,14 +137,19 @@ class ConfigLoader(ConfigLoaderInterface):
 
     def load_colour_config(self) -> dict:
         colour_config_path = self.get_config_file_path("COLOURS")
+        if getattr(self, 'verbose', False):
+            print(f"[ConfigLoader VERBOSE] Loading COLOURS config from: {colour_config_path}")
         return self.load_config(colour_config_path)
 
     def load_border_patterns_config(self) -> dict:
         try:
             border_patterns_path = self.get_config_file_path("BORDER_PATTERNS")
+            if getattr(self, 'verbose', False):
+                print(f"[ConfigLoader VERBOSE] Loading BORDER_PATTERNS config from: {border_patterns_path}")
             return self.load_config(border_patterns_path)
         except FileNotFoundError:
-            # Minimal error handling, no print
+            if getattr(self, 'verbose', False):
+                print(f"[ConfigLoader VERBOSE] BORDER_PATTERNS config not found.")
             return {}
 
     def _bootstrap_config_path(self, file: str) -> str:
@@ -81,16 +158,44 @@ class ConfigLoader(ConfigLoaderInterface):
         from pathlib import Path
         current_dir = Path(os.getcwd())
         root_path = current_dir / file
+        if getattr(self, 'verbose', False):
+            print(f"[ConfigLoader VERBOSE] Checking bootstrap path: {root_path} ...", end=" ")
         if root_path.exists():
+            if getattr(self, 'verbose', False):
+                print("SUCCESS")
             return str(root_path)
+        else:
+            if getattr(self, 'verbose', False):
+                print("NOT FOUND.. SKIPPING")
         config_path = current_dir / "config" / file
+        if getattr(self, 'verbose', False):
+            print(f"[ConfigLoader VERBOSE] Checking bootstrap config path: {config_path} ...", end=" ")
         if config_path.exists():
+            if getattr(self, 'verbose', False):
+                print("SUCCESS")
             return str(config_path)
+        else:
+            if getattr(self, 'verbose', False):
+                print("NOT FOUND.. SKIPPING")
         for parent in current_dir.parents:
             parent_config = parent / "config" / file
+            if getattr(self, 'verbose', False):
+                print(f"[ConfigLoader VERBOSE] Checking parent bootstrap config path: {parent_config} ...", end=" ")
             if parent_config.exists():
+                if getattr(self, 'verbose', False):
+                    print("SUCCESS")
                 return str(parent_config)
+            else:
+                if getattr(self, 'verbose', False):
+                    print("NOT FOUND.. SKIPPING")
         fallback_abs = os.path.abspath(os.path.join(os.getcwd(), "Dev", "tUilKit", "config", file))
+        if getattr(self, 'verbose', False):
+            print(f"[ConfigLoader VERBOSE] Checking fallback bootstrap config path: {fallback_abs} ...", end=" ")
         if os.path.exists(fallback_abs):
+            if getattr(self, 'verbose', False):
+                print("SUCCESS")
             return fallback_abs
+        else:
+            if getattr(self, 'verbose', False):
+                print("NOT FOUND.. SKIPPING")
         raise FileNotFoundError(f"Config file '{file}' not found in expected locations.")
