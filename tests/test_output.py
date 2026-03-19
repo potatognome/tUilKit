@@ -3,6 +3,7 @@ Tests for tUilKit.utils.output (Logger, ColourManager) and tUilKit.utils.fs (Fil
 ConfigLoader now loads from tUilKit_CONFIG.json.
 """
 
+
 import sys
 import os
 import json
@@ -11,33 +12,32 @@ import tempfile
 import shutil
 from datetime import datetime
 
+# --- Load absolute paths from test_paths.json ---
+paths_json = os.path.join(os.path.dirname(__file__), "test_paths.json")
+with open(paths_json, "r") as f:
+    paths = json.load(f)
+tUilKit_src_folder = paths["tUilKit_src_folder"]
+config_folder = paths["config_folder"]
+test_logs_folder = paths["test_logs_folder"]
+
 # --- 1. Command line argument for log cleanup ---
 import argparse
 parser = argparse.ArgumentParser(description="Run tUilKit output/fs test suite.")
 parser.add_argument('--clean', action='store_true', help='Remove all log files in the test log folder before running tests.')
 args, unknown = parser.parse_known_args()
 
-
 # --- 2. Imports and initialization ---
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
-project_root = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
+if tUilKit_src_folder not in sys.path:
+    sys.path.insert(0, tUilKit_src_folder)
 
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
 from tUilKit.utils.config import ConfigLoader
 
-# Change to project root before initializing ConfigLoader so paths resolve correctly
-original_cwd = os.getcwd()
-os.chdir(project_root)
-
 config_loader = ConfigLoader()
 colour_config = config_loader.load_colour_config()
 border_patterns_config = config_loader.load_border_patterns_config()
 colour_manager = ColourManager(colour_config)
-tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
-test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
 test_log_file = os.path.join(test_logs_folder, "test_output_output.log")
 logger = Logger(colour_manager, log_files={"OUTPUT": test_log_file})
 file_system = FileSystem(logger)

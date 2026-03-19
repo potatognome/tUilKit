@@ -2,9 +2,23 @@
 tUilKit Logging Rooting & Dual Logging Tests
 App: tUilKit Logging Tests
 """
+
 import os
 import shutil
 import pytest
+import sys
+import json
+
+# Load absolute paths from test_paths.json
+paths_json = os.path.join(os.path.dirname(__file__), "test_paths.json")
+with open(paths_json, "r") as f:
+    paths = json.load(f)
+tUilKit_src_folder = paths["tUilKit_src_folder"]
+test_logs_folder = paths["test_logs_folder"]
+
+# Ensure tUilKit src is in sys.path for absolute imports
+if tUilKit_src_folder not in sys.path:
+    sys.path.insert(0, tUilKit_src_folder)
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.config import ConfigLoader
 
@@ -28,8 +42,6 @@ def get_test_logger():
     config_loader = ConfigLoader()
     colour_config = config_loader.load_colour_config()
     colour_mgr = ColourManager(colour_config)
-    tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
-    test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
     log_files = {
         "SESSION": os.path.join(test_logs_folder, "SESSION.log"),
         "MASTER": os.path.join(test_logs_folder, "MASTER.log"),

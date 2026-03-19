@@ -1,12 +1,19 @@
+
 import os
 import sys
+import json
 from pathlib import Path
 
-# Ensure src on path
-BASE_DIR = Path(__file__).resolve().parents[1]
-SRC_DIR = BASE_DIR / "src"
-if str(SRC_DIR) not in sys.path:
-    sys.path.insert(0, str(SRC_DIR))
+# Load absolute paths from test_paths.json
+paths_json = os.path.join(os.path.dirname(__file__), "test_paths.json")
+with open(paths_json, "r") as f:
+    paths = json.load(f)
+tUilKit_src_folder = paths["tUilKit_src_folder"]
+config_folder = paths["config_folder"]
+
+# Ensure tUilKit src is in sys.path for absolute imports
+if tUilKit_src_folder not in sys.path:
+    sys.path.insert(0, tUilKit_src_folder)
 
 from tUilKit.utils.fs import normalize_path, detect_os, colourize_path
 from tUilKit.utils.output import ColourManager

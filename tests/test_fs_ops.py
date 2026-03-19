@@ -4,6 +4,7 @@ Tests for tUilKit.utils.fs (FileSystem) operations.
 Extremely verbose logging following the new selective logging standard.
 """
 
+
 import sys
 import os
 import json
@@ -13,24 +14,30 @@ import shutil
 import argparse
 from datetime import datetime
 
+# --- Load absolute paths from test_paths.json ---
+paths_json = os.path.join(os.path.dirname(__file__), "test_paths.json")
+with open(paths_json, "r") as f:
+    paths = json.load(f)
+tUilKit_src_folder = paths["tUilKit_src_folder"]
+config_folder = paths["config_folder"]
+test_logs_folder = paths["test_logs_folder"]
+
 # --- 1. Command line argument for log cleanup ---
 parser = argparse.ArgumentParser(description="Run tUilKit fs ops test suite.")
 parser.add_argument('--clean', action='store_true', help='Backup all log files in the test log folder before running tests.')
 args, unknown = parser.parse_known_args()
 
 # --- 2. Imports and initialization ---
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'src'))
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
-
+if tUilKit_src_folder not in sys.path:
+    sys.path.insert(0, tUilKit_src_folder)
 
 from tUilKit.utils.output import Logger, ColourManager
 from tUilKit.utils.fs import FileSystem
 from tUilKit.utils.config import ConfigLoader
 
 config_loader = ConfigLoader()
-COLOUR_CONFIG_PATH = os.path.join(base_dir, "tUilKit", "config", "COLOURS.json")
-BORDER_PATTERN_PATH = os.path.join(base_dir, "tUilKit", "config", "BORDER_PATTERNS.json")
+COLOUR_CONFIG_PATH = os.path.join(config_folder, "COLOURS.json")
+BORDER_PATTERN_PATH = os.path.join(config_folder, "BORDER_PATTERNS.json")
 
 with open(BORDER_PATTERN_PATH, "r") as f:
     border_patterns = json.load(f)
