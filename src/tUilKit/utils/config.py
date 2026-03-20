@@ -11,18 +11,31 @@ from tUilKit.utils.config_path_resolver import ConfigPathResolver
 class ConfigLoader(ConfigLoaderInterface):
     def __init__(self, verbose=False, config_path=None):
         self.verbose = verbose
-        # Step 1: Bootstrap config path and root_mode
-        bootstrap_path, bootstrap_data = self._find_bootstrap_file()
-        self.bootstrap_path = bootstrap_path
-        self.bootstrap_data = bootstrap_data
-        self.root_mode = bootstrap_data.get("root_mode", "project")
-        self.config_path = self._resolve_config_path()
+        # Step 1: If explicit config_path is provided, use it directly
+        if config_path:
+            if self.verbose:
+                print(f"[ConfigLoader] Using explicit config_path: {config_path}")
+            resolved_config_path = os.path.abspath(config_path) if not os.path.isabs(config_path) else config_path
+            if not os.path.exists(resolved_config_path):
+                raise FileNotFoundError(f"Config file not found: {resolved_config_path}")
+            self.config_path = resolved_config_path
+            self.bootstrap_path = resolved_config_path
+            self.bootstrap_data = {"root_mode": "project", "config_path": resolved_config_path}
+        else:
+            # Fallback to bootstrap logic
+            bootstrap_path, bootstrap_data = self._find_bootstrap_file()
+            self.bootstrap_path = bootstrap_path
+            self.bootstrap_data = bootstrap_data
+            self.root_mode = bootstrap_data.get("root_mode", "project")
+            self.config_path = self._resolve_config_path()
+        if self.verbose:
+            print(f"[ConfigLoader VERBOSE] Final config_path: {self.config_path}")
         config_data = self._load_json(self.config_path)
         self.global_config = config_data
         paths_cfg = config_data.get("PATHS", {})
         root_modes = config_data.get("ROOT_MODES", {})
         self.path_resolver = ConfigPathResolver(
-            config_root_mode=root_modes.get("CONFIG", self.root_mode),
+            config_root_mode=root_modes.get("CONFIG", getattr(self, 'root_mode', 'project')),
             workspace_root_path=paths_cfg.get("WORKSPACE_ROOT_PATH", os.getcwd()),
             project_root_path=paths_cfg.get("PROJECT_ROOT_PATH", os.getcwd()),
             relative_folder_paths=config_data.get("RELATIVE_FOLDER_PATHS", {})
@@ -101,15 +114,28 @@ class ConfigLoader(ConfigLoaderInterface):
         shared_enabled = shared_config.get("ENABLED", False)
         shared_path = shared_config.get("PATH", "GLOBAL_SHARED.d/")
         shared_config_files = shared_config.get("SHARED_CONFIG_FILES", {})
+        paths_cfg = self.global_config.get("PATHS", {})
+        root_modes = self.global_config.get("ROOT_MODES", {})
+        root_mode = root_modes.get("CONFIG", "project")
+        # Determine root folder
+        if root_mode == "workspace":
+            root_folder = paths_cfg.get("WORKSPACE_ROOT_PATH", os.getcwd())
+        else:
+            root_folder = paths_cfg.get("PROJECT_ROOT_PATH", os.getcwd())
+        # Construct full path for shared config
         if shared_enabled and config_key in shared_config_files:
-            workspace_root = self.global_config.get("PATHS", {}).get("WORKSPACE_ROOT_PATH", "")
-            shared_folder = os.path.join(workspace_root, shared_path)
-            path = self.path_resolver.resolve_shared_config_path(config_key, shared_config_files, shared_folder)
+            shared_file = shared_config_files[config_key]
+            shared_folder = os.path.join(root_folder, paths_cfg.get("CONFIG", ""), shared_path)
+            full_path = os.path.join(shared_folder, shared_file)
             if getattr(self, 'verbose', False):
-                print(f"[ConfigLoader VERBOSE] Resolved shared config path for '{config_key}': {path}")
-            if path:
-                return path
-            raise FileNotFoundError(f"Shared config file '{config_key}' not found.")
+                print(f"[ConfigLoader VERBOSE] Constructed shared config path for '{config_key}': {full_path}")
+            if os.path.exists(full_path):
+                return full_path
+            else:
+                if getattr(self, 'verbose', False):
+                    print(f"[ConfigLoader VERBOSE] Shared config file '{config_key}' not found at: {full_path}")
+                raise FileNotFoundError(f"Shared config file '{config_key}' not found at: {full_path}")
+        # Fallback for non-shared configs
         config_files = self.global_config.get("CONFIG_FILES", {})
         relative_path = config_files.get(config_key)
         if not relative_path:

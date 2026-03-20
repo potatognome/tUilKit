@@ -14,7 +14,7 @@
         "LOGS"                  : "workspace",
         "TEST_LOGS"             : "workspace",
         "CONFIG"                : "project",
-        "TEST_CONFIG"           : "workspace"
+        "TEST_CONFIG"           : "project"
     },
     
     "PATHS": {
@@ -22,8 +22,8 @@
         "PROJECT_ROOT_PATH"     : "C:/Repository/Daniel/dev_local/Dev/tUilKit/",        
         "LOGS"                  : ".logs/tUilKit",
         "TEST_LOGS"             : ".test_logs/tUilKit/",
-        "CONFIG"                : ".config/",
-        "TEST_CONFIG"           : ".test_config/"
+        "CONFIG"                : "config/",
+        "TEST_CONFIG"           : "config/"
     },
 
     "SHARED_CONFIG": {

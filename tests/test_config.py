@@ -10,10 +10,8 @@ import sys
 import json
 import getpass
 import datetime
-from tUilKit.utils.config import ConfigLoader
-from tUilKit.utils.output import Logger, ColourManager
 
-# --- Display test header and environment info ---
+# --- 0. Display test header and environment info ---
 os.system("cls")
 starttime = datetime.datetime.now()
 username = getpass.getuser()
@@ -47,7 +45,8 @@ tUilKit_src_folder = paths.get("tUilKit_src_folder")
 if tUilKit_src_folder and tUilKit_src_folder not in sys.path:
     sys.path.insert(0, tUilKit_src_folder)
 
-
+from tUilKit.utils.config import ConfigLoader
+from tUilKit.utils.output import Logger, ColourManager
 
 # --- 2. Create ConfigLoader instance in verbose mode ---
 print("\n=== [TEST 2] Create ConfigLoader (verbose) ===")
@@ -166,28 +165,14 @@ else:
 
 print("\n=== [TEST 7] ConfigLoader (workspace root mode) ===")
 test7_log = get_test_log_file("test7_workspace_mode", test_logs_folder)
-workspace_config_data = dict(config_data)
-workspace_config_data["ROOT_MODES"]["CONFIG"] = "workspace"
-# Save modified config for loader to pick up
+# Use pre-existing workspace config file
 workspace_config_path = os.path.join(tests_config_folder, "tUilKit_CONFIG_workspace.json")
-with open(workspace_config_path, "w", encoding="utf-8") as f:
-    json.dump(workspace_config_data, f, indent=2)
-# Re-instantiate ConfigLoader with workspace config
-workspace_loader = ConfigLoader(verbose=True)
-workspace_loader.global_config = workspace_config_data
-# Reload colour config and ColourManager for workspace mode
+workspace_loader = ConfigLoader(verbose=True, config_path=workspace_config_path)
+
+workspace_loader = ConfigLoader(verbose=True, config_path=workspace_config_path)
 try:
-    workspace_colour_config = None
-    shared_cfg_ws = workspace_config_data.get("SHARED_CONFIG", {})
-    shared_files_ws = shared_cfg_ws.get("SHARED_CONFIG_FILES", {})
-    colours_file_ws = shared_files_ws.get("COLOURS")
-    colours_path_ws = os.path.join(tests_config_folder, shared_cfg_ws.get("PATH", "GLOBAL_SHARED.d/"), colours_file_ws) if colours_file_ws else None
-    if colours_path_ws and os.path.exists(colours_path_ws):
-        with open(colours_path_ws, "r", encoding="utf-8") as f:
-            workspace_colour_config = json.load(f)
-        print(f"[TEST 7] COLOURS config loaded from: {colours_path_ws}")
-    else:
-        print("[TEST 7] COLOURS config file not found.")
+    workspace_colour_config = workspace_loader.load_colour_config()
+    print(f"[TEST 7] COLOURS config loaded from: {workspace_loader.get_config_file_path('COLOURS')}")
     workspace_colour_manager = ColourManager(workspace_colour_config) if workspace_colour_config else None
     workspace_logger = Logger(workspace_colour_manager) if workspace_colour_manager else None
     if workspace_logger:
@@ -197,7 +182,6 @@ try:
                 "TOP": ["━"], "BOTTOM": ["━"], "LEFT": ["┃"], "RIGHT": ["┃"]
             })
             workspace_logger.apply_border("Workspace mode config loaded", bold_pattern, log_files=test7_log, border_colour="!info")
-        # Log colour key for workspace mode
         colour_keys_ws = workspace_colour_config.get("COLOUR_KEYS", {}) if workspace_colour_config else {}
         workspace_logger.colour_log("!info", f"Workspace mode colour keys: {colour_keys_ws}", log_files=test7_log)
     else:
@@ -210,28 +194,13 @@ except Exception as e:
 
 print("\n=== [TEST 8] ConfigLoader (project root mode) ===")
 test8_log = get_test_log_file("test8_project_mode", test_logs_folder)
-project_config_data = dict(config_data)
-project_config_data["ROOT_MODES"]["CONFIG"] = "project"
-# Save modified config for loader to pick up
+# Use pre-existing project config file
 project_config_path = os.path.join(tests_config_folder, "tUilKit_CONFIG_project.json")
-with open(project_config_path, "w", encoding="utf-8") as f:
-    json.dump(project_config_data, f, indent=2)
-# Re-instantiate ConfigLoader with project config
-project_loader = ConfigLoader(verbose=True)
-project_loader.global_config = project_config_data
-# Reload colour config and ColourManager for project mode
+project_loader = ConfigLoader(verbose=True, config_path=project_config_path)
+project_loader = ConfigLoader(verbose=True, config_path=project_config_path)
 try:
-    project_colour_config = None
-    shared_cfg_pr = project_config_data.get("SHARED_CONFIG", {})
-    shared_files_pr = shared_cfg_pr.get("SHARED_CONFIG_FILES", {})
-    colours_file_pr = shared_files_pr.get("COLOURS")
-    colours_path_pr = os.path.join(tests_config_folder, shared_cfg_pr.get("PATH", "GLOBAL_SHARED.d/"), colours_file_pr) if colours_file_pr else None
-    if colours_path_pr and os.path.exists(colours_path_pr):
-        with open(colours_path_pr, "r", encoding="utf-8") as f:
-            project_colour_config = json.load(f)
-        print(f"[TEST 8] COLOURS config loaded from: {colours_path_pr}")
-    else:
-        print("[TEST 8] COLOURS config file not found.")
+    project_colour_config = project_loader.load_colour_config()
+    print(f"[TEST 8] COLOURS config loaded from: {project_loader.get_config_file_path('COLOURS')}")
     project_colour_manager = ColourManager(project_colour_config) if project_colour_config else None
     project_logger = Logger(project_colour_manager) if project_colour_manager else None
     if project_logger:
@@ -241,7 +210,6 @@ try:
                 "TOP": ["━"], "BOTTOM": ["━"], "LEFT": ["┃"], "RIGHT": ["┃"]
             })
             project_logger.apply_border("Project mode config loaded", bold_pattern, log_files=test8_log, border_colour="!info")
-        # Log colour key for project mode
         colour_keys_pr = project_colour_config.get("COLOUR_KEYS", {}) if project_colour_config else {}
         project_logger.colour_log("!info", f"Project mode colour keys: {colour_keys_pr}", log_files=test8_log)
     else:

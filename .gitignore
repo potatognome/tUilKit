@@ -11,6 +11,14 @@ env/
 *.env
 .env.*
 
+
+# Ignore config and log folders
+.config/
+.logs/
+.testlogs/
+.test_logs/
+.tests_logs/
+
 # Logs and temporary files
 *.log
 *.tmp
