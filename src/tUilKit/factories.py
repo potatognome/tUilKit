@@ -1,8 +1,13 @@
+
 # src/tUilKit/factories.py
+
 """
 Factory functions for creating and initializing tUilKit components.
 Encapsulates setup logic and provides convenient one-liner instantiation.
 """
+
+import os
+
 
 _config_loader = None
 _colour_manager = None
@@ -66,9 +71,8 @@ def get_colour_manager():
     """
     global _colour_manager
     if _colour_manager is None:
-        config_loader = get_config_loader()
-        colour_config = config_loader.load_colour_config()
-        _colour_manager = ColourManager(colour_config)
+        from tUilKit.utils.output import ColourManager
+        _colour_manager = ColourManager(get_config_loader().load_colour_config())
     return _colour_manager
 
 
@@ -79,6 +83,7 @@ def get_logger():
     """
     global _logger
     if _logger is None:
+        from tUilKit.utils.output import Logger
         colour_manager = get_colour_manager()
         config_loader = get_config_loader()
         root_modes = config_loader.global_config.get("ROOT_MODES", {})
@@ -117,6 +122,7 @@ def get_file_system():
     """
     global _file_system
     if _file_system is None:
+        from tUilKit.utils.fs import FileSystem
         _file_system = FileSystem()
     return _file_system
 

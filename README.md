@@ -3,9 +3,13 @@ tUilKit
 # Project Name
 tUilKit
 
-**Current version: 1.1.1**
+**Current version: 1.2.0**
 
-## Recent Enhancements (v1.1.1)
+## Recent Enhancements (v1.2.0)
+
+- **Terminal UI Modules**: Added `terminal/cursor.py`, `terminal/chroma.py`, and `terminal/canvas.py` for robust ANSI cursor movement, colour/styling, and multi-line in-place rendering. Enables live-updating status tables and advanced CLI UIs.
+tUilKit now includes:
+- **/terminal**: Pure Python modules for ANSI cursor movement, colour/styling, and multi-line rendering (Canvas, Cursor, Chroma)
 
 - **Modular Workspace Log/Test Log Path Resolution**: Log and test log paths now use WORKSPACE_ROOT_PATH and RELATIVE_FOLDER_PATHS when ROOT_MODES is set to "workspace". All log/test log utilities are fully config-driven and workspace-aware.
 - **ConfigLoader Update**: Added get_log_file_path and get_test_log_file_path methods for modular path resolution.

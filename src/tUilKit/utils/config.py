@@ -23,22 +23,37 @@ class ConfigLoader(ConfigLoaderInterface):
             self.bootstrap_data = {"root_mode": "project", "config_path": resolved_config_path}
         else:
             # Fallback to bootstrap logic
-            bootstrap_path, bootstrap_data = self._find_bootstrap_file()
-            self.bootstrap_path = bootstrap_path
-            self.bootstrap_data = bootstrap_data
-            self.root_mode = bootstrap_data.get("root_mode", "project")
-            self.config_path = self._resolve_config_path()
+            bootstrap_result = self._find_bootstrap_file()
+            if bootstrap_result is not None:
+                bootstrap_path, bootstrap_data = bootstrap_result
+                self.bootstrap_path = bootstrap_path
+                self.bootstrap_data = bootstrap_data
+                self.root_mode = bootstrap_data.get("root_mode", "project")
+                self.config_path = self._resolve_config_path()
+            else:
+                # No bootstrap file found, search for *CONFIG.json in project-level config folder
+                import glob
+                project_config_dir = os.path.abspath(os.path.join(os.getcwd(), "config"))
+                config_candidates = glob.glob(os.path.join(project_config_dir, "*CONFIG.json"))
+                if config_candidates:
+                    self.config_path = config_candidates[0]
+                else:
+                    raise FileNotFoundError(f"No bootstrap file and no *CONFIG.json found in {project_config_dir}")
+                self.bootstrap_path = self.config_path
+                self.bootstrap_data = {"root_mode": "project", "config_path": self.config_path}
+                self.root_mode = self.bootstrap_data.get("root_mode", "project")
         if self.verbose:
             print(f"[ConfigLoader VERBOSE] Final config_path: {self.config_path}")
         config_data = self._load_json(self.config_path)
         self.global_config = config_data
+        roots_cfg = config_data.get("ROOTS", {})
         paths_cfg = config_data.get("PATHS", {})
         root_modes = config_data.get("ROOT_MODES", {})
         self.path_resolver = ConfigPathResolver(
             config_root_mode=root_modes.get("CONFIG", getattr(self, 'root_mode', 'project')),
-            workspace_root_path=paths_cfg.get("WORKSPACE_ROOT_PATH", os.getcwd()),
-            project_root_path=paths_cfg.get("PROJECT_ROOT_PATH", os.getcwd()),
-            relative_folder_paths=config_data.get("RELATIVE_FOLDER_PATHS", {})
+            workspace_root_path=roots_cfg.get("WORKSPACE", os.getcwd()),
+            project_root_path=roots_cfg.get("PROJECT", os.getcwd()),
+            relative_folder_paths=paths_cfg
         )
 
 
@@ -113,18 +128,19 @@ class ConfigLoader(ConfigLoaderInterface):
         shared_config = self.global_config.get("SHARED_CONFIG", {})
         shared_enabled = shared_config.get("ENABLED", False)
         shared_path = shared_config.get("PATH", "GLOBAL_SHARED.d/")
-        shared_config_files = shared_config.get("SHARED_CONFIG_FILES", {})
+        shared_files = shared_config.get("FILES", {})
+        roots_cfg = self.global_config.get("ROOTS", {})
         paths_cfg = self.global_config.get("PATHS", {})
         root_modes = self.global_config.get("ROOT_MODES", {})
         root_mode = root_modes.get("CONFIG", "project")
         # Determine root folder
         if root_mode == "workspace":
-            root_folder = paths_cfg.get("WORKSPACE_ROOT_PATH", os.getcwd())
+            root_folder = roots_cfg.get("WORKSPACE", os.getcwd())
         else:
-            root_folder = paths_cfg.get("PROJECT_ROOT_PATH", os.getcwd())
+            root_folder = roots_cfg.get("PROJECT", os.getcwd())
         # Construct full path for shared config
-        if shared_enabled and config_key in shared_config_files:
-            shared_file = shared_config_files[config_key]
+        if shared_enabled and config_key in shared_files:
+            shared_file = shared_files[config_key]
             shared_folder = os.path.join(root_folder, paths_cfg.get("CONFIG", ""), shared_path)
             full_path = os.path.join(shared_folder, shared_file)
             if getattr(self, 'verbose', False):

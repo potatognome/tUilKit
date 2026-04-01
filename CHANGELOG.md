@@ -1,3 +1,8 @@
+## [1.2.0] - 2026-03-30
+### Added
+- **Terminal UI Modules**: Added `terminal/cursor.py`, `terminal/chroma.py`, and `terminal/canvas.py` for robust ANSI cursor movement, colour/styling, and multi-line in-place rendering. Enables live-updating status tables and advanced CLI UIs.
+### Changed
+- **Version bump**: Updated tUilKit version from 1.1.1 to 1.2.0 for terminal UI features.
 ## [1.1.1] - 2026-03-14
 ### Added
 - **Minimal ConfigLoader Test**: Added `test_config_minimal.py` for basic config loading and path resolution validation.

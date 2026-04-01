@@ -32,6 +32,10 @@ desktop.ini
 # IDE/Editor settings
 .vscode/
 .idea/
+.projects_config/
+.projects_data/
+.tests_config/
+.tests_logs/
 
 # Test coverage reports
 .coverage

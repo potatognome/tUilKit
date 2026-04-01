@@ -1,53 +1,42 @@
-# Lib/site-packages/tUilKit/utils/output.py 
 """
 Contains functions for log files and displaying text output in the terminal using ANSI sequences to colour code output.
 """
-import re
-from datetime import datetime
-import sys
+
 import os
-from abc import ABC, abstractmethod
-
-# Add the base directory of the project to the system path
-base_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '..\\..\\'))
-if base_dir not in sys.path:
-    sys.path.insert(0, base_dir)
-
+from datetime import datetime
 from tUilKit.dict.DICT_COLOURS import RGB
 from tUilKit.dict.DICT_CODES import ESCAPES, COMMANDS
 from tUilKit.interfaces.logger_interface import LoggerInterface
 from tUilKit.interfaces.colour_interface import ColourInterface
 from tUilKit.utils.config import ConfigLoader
+import copy
 
 # ANSI ESCAPE CODE PREFIXES for colour coding f-strings
 SET_FG_COLOUR = ESCAPES['OCTAL'] + COMMANDS['FGC']
 SET_BG_COLOUR = ESCAPES['OCTAL'] + COMMANDS['BGC']
 ANSI_RESET = ESCAPES['OCTAL'] + COMMANDS['RESET']
-
-
-import copy
-config_loader = ConfigLoader()
-LOG_FILES = copy.deepcopy(config_loader.global_config.get("LOG_FILES", {}))
-root_modes = config_loader.global_config.get("ROOT_MODES", {})
-log_root_mode = root_modes.get("LOGS", "project")
-if log_root_mode == "workspace":
-    workspace_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
-    for key in LOG_FILES:
-        if not os.path.isabs(LOG_FILES[key]):
-            app_name = LOG_FILES[key].split("/")[1] if "/" in LOG_FILES[key] else "tUilKit"
-            log_name = os.path.basename(LOG_FILES[key])
-            LOG_FILES[key] = os.path.join(workspace_root, LOG_FILES[key])
-elif log_root_mode == "auto":
+try:
+    config_loader = ConfigLoader()
+    LOG_FILES = copy.deepcopy(config_loader.global_config.get("LOG_FILES", {}))
+    root_modes = config_loader.global_config.get("ROOT_MODES", {})
+    log_root_mode = root_modes.get("LOGS", "project")
+    if log_root_mode == "workspace":
+        workspace_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
+        for key in LOG_FILES:
+            if not os.path.isabs(LOG_FILES[key]):
+                app_name = LOG_FILES[key].split("/")[1] if "/" in LOG_FILES[key] else "tUilKit"
+                log_name = os.path.basename(LOG_FILES[key])
+                LOG_FILES[key] = os.path.join(workspace_root, LOG_FILES[key])
+    elif log_root_mode == "auto":
+        pass
+except Exception:
+    config_loader = None
+    LOG_FILES = {}
     # For 'auto', default to workspace root
     workspace_root = os.path.abspath(os.path.join(os.getcwd(), "../../"))
     for key in LOG_FILES:
         if not os.path.isabs(LOG_FILES[key]):
             LOG_FILES[key] = os.path.join(workspace_root, LOG_FILES[key])
-elif log_root_mode == "project":
-    project_root = os.path.abspath(os.path.join(os.getcwd(), "Dev", "tUilKit"))
-    for key in LOG_FILES:
-        if not os.path.isabs(LOG_FILES[key]):
-            LOG_FILES[key] = os.path.join(project_root, LOG_FILES[key])
 
 class ColourManager(ColourInterface):
     def __init__(self, colour_config: dict):
@@ -181,15 +170,23 @@ class Logger(LoggerInterface):
         self.Colour_Mgr = colour_manager
         self._log_queue = []
         self.dual_logging = bool(os.environ.get("TUILKIT_DUAL_LOGGING", "1") == "1")
-        self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {
-            "default": ["MASTER", "SESSION"],
-            "error": ["ERROR", "SESSION", "MASTER"],
-            "fs": ["MASTER", "SESSION", "FS"],
-            "init": ["INIT", "SESSION", "MASTER"]
-        })
+        if config_loader is not None:
+            self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {
+                "default": ["MASTER", "SESSION"],
+                "error": ["ERROR", "SESSION", "MASTER"],
+                "fs": ["MASTER", "SESSION", "FS"],
+                "init": ["INIT", "SESSION", "MASTER"]
+            })
+        else:
+            self.LOG_KEYS = {
+                "default": ["MASTER", "SESSION"],
+                "error": ["ERROR", "SESSION", "MASTER"],
+                "fs": ["MASTER", "SESSION", "FS"],
+                "init": ["INIT", "SESSION", "MASTER"]
+            }
         self.test_mode = bool(os.environ.get("TUILKIT_TEST_MODE", "0") == "1")
         if self.test_mode:
-            tests_options = config_loader.global_config.get("TESTS_OPTIONS", {})
+            tests_options = config_loader.global_config.get("TESTS_OPTIONS", {}) if config_loader is not None else {}
             test_logs_folder = tests_options.get("TEST_LOGS_FOLDER", ".testlogs/tUilKit/")
             self.log_files = {}
             for key in LOG_FILES:
@@ -245,7 +242,7 @@ class Logger(LoggerInterface):
         else:
             return "", ""
 
-    def log_message(self, message: str, log_files = None, end: str = "\n", log_to: str = "both", time_stamp: bool = True, dual_log: bool = None):
+    def log_message(self, message: str, log_files = None, end: str = "\n", log_to: str = "both", time_stamp: bool = True, dual_log: 'bool | None' = None):
         """
         log_files: list of str or str or None
         log_to: "both", "file", "term", "queue"

@@ -59,9 +59,14 @@ class FileSystem(FileSystemInterface):
         """
         Initializes the FileSystem with a logger and optional log_files dict.
         """
-        from tUilKit.utils.output import Logger
+        from tUilKit.utils.output import Logger, ColourManager
         config_loader = ConfigLoader()
-        self.logger = logger or Logger()
+        if logger is not None:
+            self.logger = logger
+        else:
+            colour_config = config_loader.load_colour_config() if hasattr(config_loader, 'load_colour_config') else {}
+            colour_manager = ColourManager(colour_config)
+            self.logger = Logger(colour_manager)
         log_files = log_files or config_loader.global_config.get("LOG_FILES", {})
         super().__init__(self.logger, log_files)
         self.LOG_KEYS = config_loader.global_config.get("LOG_CATEGORIES", {

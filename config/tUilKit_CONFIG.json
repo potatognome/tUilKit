@@ -17,32 +17,42 @@
         "TEST_CONFIG"           : "project"
     },
     
-    "PATHS": {
-        "WORKSPACE_ROOT_PATH"   : "C:/Repository/Daniel/dev_local/",
-        "PROJECT_ROOT_PATH"     : "C:/Repository/Daniel/dev_local/Dev/tUilKit/",        
-        "LOGS"                  : ".logs/tUilKit",
-        "TEST_LOGS"             : ".test_logs/tUilKit/",
-        "CONFIG"                : "config/",
-        "TEST_CONFIG"           : "config/"
+    "ROOTS": {
+        "WORKSPACE": "C:/Repository/Daniel/dev_local",
+        "PROJECT": "C:/Repository/Daniel/dev_local/Dev/tUilKit"
     },
-
+    "ROOT_MODES": {
+        "LOGS": "workspace",
+        "TEST_LOGS": "workspace",
+        "CONFIG": "project",
+        "TEST_CONFIG": "project"
+    },
+    "PATHS": {
+        "LOGS": ".logs/tUilKit/",
+        "TEST_LOGS": ".test_logs/tUilKit/",
+        "CONFIG": "config/",
+        "TEST_CONFIG": "config/"
+    },
     "SHARED_CONFIG": {
-        "ENABLED"                   : true,
-        "PATH"                      : "GLOBAL_SHARED.d/",
-        "SHARED_CONFIG_FILES": {
-            "COLOURS"               : "COLOURS.json",
-            "BORDER_PATTERNS"       : "BORDER_PATTERNS.json",
-            "TESTS_OPTIONS"         : "TESTS_OPTIONS.json",
-            "TIME_STAMP_OPTIONS"    : "TIME_STAMP_OPTIONS.json"
+        "ENABLED": true,
+        "PATH": "GLOBAL_SHARED.d/",
+        "FILES": {
+            "COLOURS": "COLOURS.json",
+            "BORDER_PATTERNS": "BORDER_PATTERNS.json",
+            "TESTS_OPTIONS": "TESTS_OPTIONS.json",
+            "TIME_STAMP_OPTIONS": "TIME_STAMP_OPTIONS.json"
         }
-    },  
-
-    "LOG_FILES": {
-        "MASTER"            : "MASTER.log",
-        "ERROR"             : "ERROR.log",
-        "FS"                : "FS.log",
-        "INIT"              : "INIT.log",
-        "RUNTIME"           : "RUNTIME.log",
+    },
+    "ALT_CONFIG": {
+        "ENABLED": false,
+        "PATH": "",
+        "FILES": {
+            "COLOURS": "",
+            "BORDER_PATTERNS": "",
+            "TESTS_OPTIONS": "",
+            "TIME_STAMP_OPTIONS": ""
+        }
+    },
         "WARNING"           : "WARNING.log",
         "DATABASE"          : "DATABASE.log",
         "DEBUG"             : "DEBUG.log"
