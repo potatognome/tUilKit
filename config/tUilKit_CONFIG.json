@@ -5,7 +5,8 @@
                  "PROJECT_DESCRIPTION":  "Core utility toolkit for CLI apps: colour management, filesystem helpers, JSON config, dataframe utilities, logging, a command line menu interface, and testing framework.",
                  "AUTHOR":  "Daniel Austin \u003cthe.potato.gnome@gmail.com\u003e",
                  "VERSION":  "0.5.0",
-                 "MAIN_ENTRY_POINT":  "src/tUilKit/__init__.py"
+                 "MAIN_ENTRY_POINT":  "src/tUilKit/__init__.py",
+                 "COLOUR_FSTR": "!project"
              },
     "ROOTS":  {
                   "PROJECT":  "C:/Repository/Daniel/dev_local/Core/tUilKit",

@@ -275,6 +275,54 @@ logger.colour_log("!list", "2", "!text", ". 💾 Run Backup")
 logger.colour_log("!list", "3", "!text", ". 🚪 Exit")
 ```
 
+### Standard Menu Icon Set
+
+Use these icons consistently in CLI menus (core defaults + extended set):
+
+- `📂` Project selection and folder navigation
+- `✅` Validation and checks
+- `🏗️` Repair workflows (legacy/core)
+- `🛠️` Fix/repair operations (detailed)
+- `⚙️` Settings and toggles
+- `💾` Save/write actions
+- `🚪` Quit/exit actions
+- `◀` Back actions in submenus
+
+Extended menu icon set:
+
+- `🔎` Search/discover actions
+- `🔍` Scan actions
+- `⚖️` Compare/diff actions
+- `🔄` Sync operations
+- `🧩` Inject/template operations
+- `🧰` Configuration tool actions
+- `🧱` Workspace/root actions
+- `📄` Copy/export actions
+- `➕` Add/create actions
+- `🗑️` Remove/delete actions
+- `✂️` Snippet operations
+
+If terminal encoding cannot render emoji, use safe ASCII fallbacks.
+
+### Shared Menu Helper Pattern (V4l1d8r)
+
+For menu code in V4l1d8r-style apps, prefer shared helpers:
+
+```python
+_display_header(ctx, menu_title="Settings")
+_print_options(ctx, [
+    "1 . Toggle Add Missing Config Keys:  ASK",
+    "2 . Toggle Remove Config Keys:  ASK",
+    "0 . Back",
+])
+```
+
+Main menu uses:
+
+```python
+_display_header(ctx, menu_title="Main Menu", is_main_menu=True)
+```
+
 ### Test Output
 
 ```python
@@ -392,6 +440,7 @@ logger.colour_log("!info", "Message", log_files=[LOG_FILES["SESSION"], function_
 - ✅ **Always wrap path values with `colourize_path(str(path), logger.Colour_Mgr)`** before passing to `colour_log`
 - ✅ In V4l1d8r menus, use `_cpath(ctx, path)` which combines relativization + `colourize_path`
 - ✅ Use `!done` for success, `!error` for failures, `!warn` for warnings
+- ✅ Use the expanded standard menu icon set for menu labels and entries
 
 ### DON'T:
 - ❌ Don't use `print()` in production code - use `logger.colour_log()`
@@ -501,4 +550,4 @@ logger.colour_log("!test", "Result:", "!pass", "PASSED")
 - Test output: `.github/copilot-instructions.d/building_tests_policy.md`
 
 ---
-Last updated: 2026-05-01
+Last updated: 2026-05-02

@@ -170,6 +170,30 @@ Projects may define an `INFO_DISPLAY` key in their primary config JSON with one 
 
 ---
 
+## 4.1 Menu and Settings Logging Rules
+
+When implementing CLI menus, log global settings changes and safety prompts explicitly.
+
+Required events:
+- Recursive folder search toggle changes (`ON`/`OFF`).
+- Add-missing mode changes (`AUTO-NO` / `ASK` / `AUTO-YES`).
+- Remove-keys mode changes (`AUTO-NO` / `ASK` / `AUTO-YES`).
+- Leaving Settings while any mode is `AUTO-YES` must emit a warning before confirmation.
+
+Recommended keys:
+- `!info` or `!data` for normal mode value displays.
+- `!warn` for AUTO-YES safety warning and auto-decisions.
+- `!done` for applied changes.
+
+Example:
+
+```python
+logger.colour_log("!info", "Add Missing Config Keys mode:", "!data", mode, log_files=lf)
+logger.colour_log("!warn", "[WARNING] One or more settings are AUTO-YES.", log_files=lf)
+```
+
+---
+
 ## 5. Colour Key Quick Reference for Logging Categories
 
 | Category                   | Primary key | Secondary / value key | Notes |
@@ -183,6 +207,7 @@ Projects may define an `INFO_DISPLAY` key in their primary config JSON with one 
 | Caught exception (warn)    | `!warn`     | `!data`                | |
 | Test / assertion           | `!test`     | `!pass` / `!fail`      | Target TRY log |
 | Timestamps                 | `!date`     | —                      | Include in all entries |
+| Settings safety warning    | `!warn`     | `!data`                | AUTO-YES exit verification |
 | Objects / class names      | `!text`     | —                      | Emphasised label |
 | Variable names / symbols   | `!data`     | —                      | Cyan |
 | Integer / numeric values   | `!int`      | —                      | |
@@ -217,6 +242,8 @@ logger.colour_log("!path", f"Path: {coloured}", log_files=list(LOG_FILES.values(
 ```
 
 ---
+
+Last updated: 2026-05-02
 
 ## 6. Recommended LOG_FILES Config Block
 

@@ -29,16 +29,21 @@ Rules
 
 ### 1) Header Pattern
 
-Always use `_display_header(ctx, subtitle=...)` from shared helpers.
+Always use `_display_header(...)` from shared helpers.
 
 Current baseline behavior:
-- Header width is dynamic (not fixed).
-- Width expands to accommodate longest line, with practical min/max bounds.
-- Includes user, timestamp, cwd, and selected-project summary.
+- Main menu uses:
+    - `_display_header(ctx, menu_title="Main Menu", is_main_menu=True)`
+    - Two bordered sections are rendered: app header, then uppercase centered menu title.
+- Submenus use:
+    - `_display_header(ctx, menu_title="Some Menu")`
+    - One bordered section: uppercase centered menu title.
+- A blank line is printed after each bordered header section.
 
 Guideline
-- Do not hardcode small header widths (for example 60/72) in new menus.
+- Do not hardcode local border builders for menu titles.
 - Use shared header logic so all menus inherit future improvements automatically.
+- Keep title strings plain (for example, `"Settings"`); `_display_header` handles uppercase.
 
 ### 2) Option Rendering Pattern
 
@@ -47,6 +52,34 @@ Use `_print_options(ctx, [...])`.
 Why
 - Keeps number formatting and semantic color keys consistent.
 - Avoids one-off menu formatting drift.
+
+Icon standard
+- Menu options should use `_print_options` icon mapping and a broader semantic palette.
+- Core defaults (must remain stable):
+    - Project / Select -> `📂`
+    - Validation / Check -> `✅`
+    - Repair -> `🏗️` or `🛠️`
+    - Settings -> `⚙️`
+    - Save -> `💾`
+    - Quit / Exit -> `🚪`
+    - Back -> `◀`
+- Extended mappings (recommended):
+    - Discover / Search / Scan -> `🔎` / `🔍`
+    - Compare / Diff -> `⚖️`
+    - Sync -> `🔄`
+    - Inject / Template -> `🧩`
+    - Config -> `🧰`
+    - Workspace -> `🧱`
+    - Copy -> `📄`
+    - Add / Create -> `➕`
+    - Remove / Delete -> `🗑️`
+    - Snippets -> `✂️`
+- If terminal encoding cannot render emoji, fallback ASCII tokens are acceptable.
+
+Menu ordering rules
+- Last option is always `Quit Application` on the Main Menu.
+- In submenus, last option is always `Back`.
+- Main menu should include `Settings` as the second-last logical action before quit.
 
 ### 3) Selection Pattern (Interactive Multi-Select)
 
@@ -101,7 +134,7 @@ Recommended loop template:
 ```python
 def _my_menu(ctx: AppContext) -> None:
     while True:
-        _display_header(ctx, subtitle=">> My Menu")
+        _display_header(ctx, menu_title="My Menu")
         _print_options(ctx, [
             "1 . First action",
             "2 . Second action",
@@ -126,6 +159,29 @@ def _my_menu(ctx: AppContext) -> None:
             _pause(ctx)
 ```
 
+### 6) Validator Main Menu Baseline
+
+For V4l1d8r, the main menu order is canonical:
+
+1. `Project Selection`
+2. `Validation, Scanning and Comparison`
+3. `Sync, Repair and Fix`
+4. `Configuration`
+5. `Settings`
+0. `Quit Application`
+
+`Snippet management` and destructive/automation toggles belong under `Settings`, not the main menu.
+
+### 7) Global Settings Safety Pattern
+
+Settings menu should include global toggles:
+- `Toggle Recursive Folder Search: {ON, OFF}`
+- `Toggle Add Missing Config Keys: {AUTO-NO, ASK, AUTO-YES}`
+- `Toggle Remove Config Keys: {AUTO-NO, ASK, AUTO-YES}`
+
+Safety rule:
+- When leaving Settings, if either add-missing or remove-keys mode is `AUTO-YES`, show a warning and require confirmation before returning to main menu.
+
 ## Migration Rules for Future CLI Menus
 
 When modernizing older menus, apply this order:
@@ -134,6 +190,18 @@ When modernizing older menus, apply this order:
 3. Replace comma-separated multi-select input with interactive picker.
 4. Switch path rendering to `_cpath` and align paths in a vertical column.
 5. Keep confirmation prompts routed through `_confirm` where available.
+6. For policy-driven prompts, route through `_confirm_with_mode` when settings support AUTO-NO/ASK/AUTO-YES.
+7. Ensure main/submenu title rendering follows `_display_header(..., menu_title=...)` rules.
+
+## tUilKit CLI Module Alignment Note
+
+Legacy utility module:
+- `Core/tUilKit/src/tUilKit/utils/cli_menus.py`
+
+When modernizing or creating new menus in tUilKit modules:
+- Prefer V4l1d8r shared menu helpers/patterns over ad-hoc direct input loops.
+- Keep icon semantics aligned to this document.
+- Prefer centralized settings behavior and safety prompts over per-menu custom logic.
 
 ## Non-Goals / Avoid
 
@@ -145,9 +213,12 @@ When modernizing older menus, apply this order:
 ## Quick Checklist (Before Merging Menu Changes)
 
 - Uses `_display_header` and `_print_options`.
+- Uses `menu_title` / `is_main_menu` pattern (no legacy `subtitle` argument).
 - Multi-select uses arrow/space interactive picker.
 - Paths use `_cpath` and line up in a fixed visual column.
 - Tabular output uses semantic keys for every column; no `!info` in table rows.
+- Icons follow the expanded semantic mapping in this doc with fallback support.
+- Settings exit warning appears when AUTO-YES modes are active.
 - Unknown-option handling is present.
 - Tests pass.
 
@@ -158,4 +229,4 @@ When modernizing older menus, apply this order:
 - Colour key usage: `Core/V4l1d8r/config/COPILOT-INSTRUCTIONS.d/colour_key_usage.md`
 
 ---
-Last updated: 2026-05-01
+Last updated: 2026-05-02
