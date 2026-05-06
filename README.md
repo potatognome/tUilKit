@@ -3,7 +3,15 @@ tUilKit
 # Project Name
 tUilKit
 
-**Current version: 0.5.1**
+**Current version: 0.6.0**
+
+## Recent Enhancements (v0.6.0)
+
+- **Terminal Windowing System** (`tUilKit.output`): Full compositor-based
+  terminal UI framework with double-buffered compositing, clipping, z-order
+  window management, ANSI rendering, border drawing (single/double/heavy/rounded),
+  and a widget tree. See [`docs/compositor_README.md`](docs/compositor_README.md).
+- **80 new tests** in `tests/output/` covering all new subsystems.
 
 ## Recent Enhancements (v0.5.1)
 
@@ -61,10 +69,27 @@ tUilKit is organized into three main components:
             calc.py                     # Add-on - Specialized calculations
             wallet.py                   # Add-on - Specialized crypto wallet utilities
             data.py                     # Add-on - Specialized data utilities
+        /output                         # Terminal windowing & compositing (v0.6.0)
+            /backend
+                backend.py              # Style dataclass + RenderBackendInterface ABC
+                ansi_backend.py         # AnsiRenderBackend (ANSI escape, diff-flush)
+            /zorder
+                zorder.py               # ZOrderManager (sorted window list)
+            /window
+                window.py               # Window dataclass
+                window_manager.py       # WindowManager (registry, focus, z-order)
+            /draw
+                draw_context.py         # Rect + DrawContext (clipping)
+                border.py               # draw_border / draw_titled_border
+            /widgets
+                widget.py               # Widget ABC + TextWidget + FilledWidget
+            /compositor
+                compositor.py           # Compositor (double-buffer, render_frame)
     /docs
         tUilKit_Comprehensive_Usage_Guide.md  # Complete usage documentation
         ColourKey_Usage_Guide.md              # Colour key addendum
         FileSystem_Usage_Guide.md             # File system addendum
+        compositor_README.md                  # Terminal windowing & compositor guide
     /tests
         /config
             /GLOBAL_SHARED.d
