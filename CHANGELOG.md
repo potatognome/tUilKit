@@ -2,6 +2,34 @@
 
 All notable changes to this project are documented in this file.
 
+## 0.6.0 - 2026-05-06
+
+### Added
+- **Terminal Windowing System** (`tUilKit.output`) — full compositor-based
+  terminal UI framework with the following subpackages:
+  - `output/backend/` — `Style` dataclass, `RenderBackendInterface` ABC, and
+    `AnsiRenderBackend` (ANSI escape sequences, absolute cursor positioning,
+    diff-only flushing).
+  - `output/zorder/` — `ZOrderManager` keeping windows sorted by `z_index`;
+    exposes `raise_window`, `lower_window`, `set_z_index`.
+  - `output/window/` — `Window` dataclass (id, x, y, width, height, z_index,
+    content, border_style, focusable, title) and `WindowManager`
+    (`create_window`, `close_window`, `move_window`, `resize_window`,
+    `focus_window`, `raise_window`, `lower_window`, `set_z_index`,
+    `list_windows_in_z_order`).
+  - `output/draw/` — `Rect`, `DrawContext` (window-local coordinates +
+    clipping), `draw_border`, `draw_titled_border` supporting `"single"`,
+    `"double"`, `"heavy"`, and `"rounded"` border styles with Unicode
+    box-drawing characters.
+  - `output/widgets/` — `Widget` abstract base class (`render`, `measure`,
+    `layout`); built-in `TextWidget` and `FilledWidget`.
+  - `output/compositor/` — `Compositor` with double-buffering; `render_frame`
+    clears back buffer, paints all windows in z-order with clipped
+    `DrawContext`, then diff-flushes only changed cells to the backend.
+- **80 new pytest tests** in `tests/output/` covering every subsystem.
+- **`docs/compositor_README.md`** — full usage guide, architecture overview,
+  custom-widget and custom-backend examples.
+
 ## 0.5.1 - 2026-04-22
 
 ### Added
