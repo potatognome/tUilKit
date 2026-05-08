@@ -1,6 +1,6 @@
 # Building Windowed Apps with the Updated Compositor
 
-Purpose
+## Purpose
 - Define the default architecture for terminal windowed apps built on the current tUilKit compositor primitives.
 - Keep rendering, input, state, and logging separated so windowed apps stay testable and reusable.
 - Ensure new windowed UI work uses the current `Canvas` / `Cursor` / `Chroma` stack instead of ad-hoc print-driven redraws.
@@ -12,7 +12,7 @@ Treat the current terminal stack as the compositor baseline:
 - `Cursor` = cursor visibility, movement, and line/screen control
 - `Chroma` = ANSI colour/style application
 
-Rules
+## Rules
 - Use `Canvas.draw()` for the first frame and `Canvas.redraw()` for subsequent frames.
 - Keep `Cursor.hide()` / `Cursor.show()` in the render loop boundary, not scattered across business logic.
 - Use `Chroma` only for presentation styling; core state should remain plain data.
