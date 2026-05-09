@@ -5,10 +5,12 @@ import pytest
 from tUilKit.terminal.canvas import Canvas
 from tUilKit.terminal.cursor import Cursor
 
-def patch_cursor_ansi(val):
-    orig = Cursor.up
-    Cursor.up = staticmethod(lambda n=1: "\033[{n}A" if val else "")
-    return orig
+def patch_cursor_ansi(monkeypatch, val):
+    monkeypatch.setattr(
+        Cursor,
+        "up",
+        staticmethod(lambda n=1: f"\033[{n}A" if val else ""),
+    )
 
 def test_draw_and_as_text():
     c = Canvas()
@@ -19,7 +21,7 @@ def test_draw_and_as_text():
 
 def test_redraw_ansi(monkeypatch):
     c = Canvas()
-    patch_cursor_ansi(True)
+    patch_cursor_ansi(monkeypatch, True)
     c.draw(["A", "B"])
     out = c.redraw(["X", "Y"])
     # Should move up 2, clear, print X, clear, print Y
@@ -29,7 +31,7 @@ def test_redraw_ansi(monkeypatch):
 
 def test_redraw_fallback(monkeypatch):
     c = Canvas()
-    patch_cursor_ansi(False)
+    patch_cursor_ansi(monkeypatch, False)
     c.draw(["A", "B"])
     out = c.redraw(["X", "Y"])
     # Should just append new output

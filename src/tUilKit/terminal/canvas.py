@@ -33,10 +33,13 @@ class Canvas:
         # Move cursor up to start of frame
         out = []
         if self.line_count:
-            out.append(Cursor.up(self.line_count))
+            up = Cursor.up(self.line_count)
+            if "{n}" in up:
+                up = up.format(n=self.line_count)
+            out.append(up)
         # Clear each line and print new
         for line in lines:
-            out.append(Cursor.clear_line())
+            out.append("\033[2K")
             out.append(line)
             out.append("\n")
         self.last_frame = list(lines)
