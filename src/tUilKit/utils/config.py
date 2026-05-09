@@ -77,7 +77,24 @@ class ConfigLoader(ConfigLoaderInterface):
                     bootstrap_data = json.load(f)
                 return bootstrap_path, bootstrap_data
             # Fallback: synthesize bootstrap_data from test_paths.json
-            config_path = test_paths.get("config_path") or os.path.join(test_paths.get("tests_config_folder", cwd), "tUilKit_CONFIG.json")
+            # Try direct config path keys first.
+            config_path = (
+                test_paths.get("config_path")
+                or test_paths.get("config_file")
+                or test_paths.get("tuilkit_config_file")
+            )
+            # Then try resolving tUilKit_CONFIG.json from a known folder key.
+            if not config_path or not os.path.exists(config_path):
+                for folder_key in ("config_folder", "tests_config_folder", "test_config_folder", "tests_config_folder"):
+                    folder = test_paths.get(folder_key)
+                    if folder:
+                        candidate = os.path.join(folder, "tUilKit_CONFIG.json")
+                        if os.path.exists(candidate):
+                            config_path = candidate
+                            break
+            # Final fallback to the legacy pattern.
+            if not config_path:
+                config_path = os.path.join(test_paths.get("tests_config_folder", cwd), "tUilKit_CONFIG.json")
             bootstrap_data = {
                 "root_mode": "project",
                 "config_path": config_path

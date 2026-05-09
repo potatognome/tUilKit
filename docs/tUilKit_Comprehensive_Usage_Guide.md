@@ -199,6 +199,144 @@ options = [
 ]
 choice = menus.show_numbered_menu("Main Menu", options)
 
+---
+
+## Terminal Compositor Stack
+
+tUilKit v1.0+ includes a full double-buffered terminal compositor under `tUilKit.output`.
+It is independent of the factory / logging subsystem and requires no config file.
+
+### Architecture
+
+```
+AnsiRenderBackend   ─ translates draw calls to ANSI escape sequences
+         ↑
+    Compositor      ─ double-buffered frame assembler; diffs back/front buffers
+         ↑
+  WindowManager     ─ registry of windows, focus, z-order, geometry
+         ↑
+     Window          ─ a rectangular screen region with optional Widget content
+         ↑
+     Widget          ─ abstract base class for renderable UI components
+```
+
+### Quick Start
+
+```python
+from tUilKit.output.backend.ansi_backend import AnsiRenderBackend
+from tUilKit.output.compositor.compositor import Compositor
+from tUilKit.output.window.window_manager import WindowManager
+from tUilKit.output.widgets.widget import Widget
+from tUilKit.output.draw.draw_context import DrawContext
+from tUilKit.output.backend.backend import Style
+
+# 1. Create backend + compositor
+backend = AnsiRenderBackend()
+comp    = Compositor(backend, width=80, height=24)
+
+# 2. Create window manager and add a window
+wm  = WindowManager()
+wid = wm.create_window(x=2, y=2, width=40, height=10, title=" Hello ")
+
+# 3. Render
+backend.hide_cursor()
+comp.render_frame(wm.list_windows_in_z_order())
+backend.show_cursor()
+```
+
+### Subpackage API Reference
+
+#### `tUilKit.output.backend`
+
+| Symbol | Description |
+|--------|-------------|
+| `Style` | Dataclass: `fg`, `bg` (ANSI escape strings), `bold`, `dim`, `underline`, `reverse` booleans |
+| `RenderBackendInterface` | Abstract base; methods: `draw_rune`, `draw_string`, `move_cursor`, `flush`, `clear_region` |
+| `AnsiRenderBackend` | Concrete ANSI backend; extra helpers: `hide_cursor()`, `show_cursor()` |
+
+#### `tUilKit.output.window`
+
+| Symbol | Description |
+|--------|-------------|
+| `Window` | Dataclass: `id`, `x`, `y`, `width`, `height`, `z_index`, `content`, `border_style`, `focusable`, `title`; `.inner_rect()` returns content area |
+| `WindowManager` | `create_window(**kwargs) → str`, `close_window(id)`, `move_window(id, x, y)`, `resize_window(id, w, h)`, `focus_window(id)`, `raise_window(id)`, `lower_window(id)`, `set_z_index(id, z)`, `list_windows_in_z_order() → list[Window]` |
+
+#### `tUilKit.output.zorder`
+
+| Symbol | Description |
+|--------|-------------|
+| `ZOrderManager` | `add(win)`, `remove(id)`, `raise_window(id)`, `lower_window(id)`, `set_z_index(id, z)`, `list_in_z_order() → list` |
+
+#### `tUilKit.output.draw`
+
+| Symbol | Description |
+|--------|-------------|
+| `Rect` | Dataclass: `x`, `y`, `width`, `height`; `.contains(sx, sy)`, `.intersects(other)` |
+| `DrawContext` | Clipped drawing surface for widgets; `draw_rune(x, y, ch, style)`, `draw_string(x, y, s, style)` |
+| `draw_titled_border` | Utility: draws a titled border on a `DrawContext` |
+
+#### `tUilKit.output.widgets`
+
+| Symbol | Description |
+|--------|-------------|
+| `Widget` | Abstract base; override `render(ctx)`, optionally `measure() → (w, h)`, `layout(x, y, w, h)` |
+
+#### `tUilKit.output.compositor`
+
+| Symbol | Description |
+|--------|-------------|
+| `Compositor` | `render_frame(windows)` — clears back buffer, draws all windows in z-order, diffs and flushes to backend; `resize(w, h)` resets both buffers |
+
+### Border Styles
+
+`create_window(border_style=...)` accepts: `"single"` (┌─┐), `"double"` (╔═╗), `"heavy"` (┏━┓), `"rounded"` (╭─╮), `"none"`.
+
+### Custom Widget
+
+```python
+class MyWidget(Widget):
+    def render(self, ctx: DrawContext) -> None:
+        ctx.draw_string(0, 0, "Hello from MyWidget!", Style(bold=True))
+
+widget = MyWidget()
+widget.layout(0, 0, 30, 5)
+wid = wm.create_window(x=5, y=5, width=32, height=7, content=widget)
+```
+
+### Headless / Test Mode — `StringCaptureBackend`
+
+For unit tests, implement a minimal backend that captures to a plain-text grid instead of writing ANSI sequences to a terminal:
+
+```python
+from tUilKit.output.backend.backend import RenderBackendInterface, Style
+
+class StringCaptureBackend(RenderBackendInterface):
+    def __init__(self, width, height):
+        self._w, self._h = width, height
+        self._cells: dict[tuple[int, int], str] = {}
+    def move_cursor(self, x, y): pass
+    def draw_rune(self, x, y, ch, style): self._cells[(x, y)] = ch[0]
+    def draw_string(self, x, y, s, style):
+        for i, ch in enumerate(s): self._cells[(x + i, y)] = ch
+    def flush(self): pass
+    def clear_region(self, x, y, w, h):
+        for r in range(y, y+h):
+            for c in range(x, x+w): self._cells[(c, r)] = " "
+    def render_text(self) -> str:
+        return "\n".join(
+            "".join(self._cells.get((c, r), " ") for c in range(self._w)).rstrip()
+            for r in range(self._h)
+        )
+
+backend = StringCaptureBackend(60, 10)
+comp    = Compositor(backend, width=60, height=10)
+# … create windows … render_frame …
+frame_text = backend.render_text()
+```
+
+See `examples/compositor_examples.py` for runnable demos of all patterns above.
+
+
 # Confirmation prompt
 if menus.confirm("Overwrite existing file?", default=False):
     ...

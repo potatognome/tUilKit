@@ -24,7 +24,27 @@ if not TEST_PATHS_FILE.exists():
 PATHS = json.loads(TEST_PATHS_FILE.read_text(encoding="utf-8"))
 PROJECT_ROOT = Path(PATHS["project_root"]).resolve()
 WORKSPACE_ROOT = Path(PATHS["workspace_root"]).resolve()
-CONFIG_FILE = Path(PATHS["config_file"]).resolve()
+
+
+def _resolve_config_file(p: dict) -> Path:
+    """Derive the primary tUilKit config path from whatever keys test_paths.json provides."""
+    for key in ("config_file", "tuilkit_config_file"):
+        raw = p.get(key)
+        if raw:
+            c = Path(raw)
+            if c.exists():
+                return c.resolve()
+    for folder_key in ("config_folder", "tests_config_folder", "test_config_folder"):
+        folder = p.get(folder_key)
+        if folder:
+            c = Path(folder) / "tUilKit_CONFIG.json"
+            if c.exists():
+                return c.resolve()
+    # Hard fallback: project-local config/
+    return (PROJECT_ROOT / "config" / "tUilKit_CONFIG.json").resolve()
+
+
+CONFIG_FILE = _resolve_config_file(PATHS)
 
 SRC_ROOT = PROJECT_ROOT / "src"
 if str(SRC_ROOT) not in sys.path:
@@ -35,8 +55,7 @@ from tUilKit.utils.output import ColourManager, Logger  # noqa: E402
 
 
 # Initialize ConfigLoader with explicit tUilKit config path
-TUILKIT_CONFIG = Path(PATHS.get("tuilkit_config_file", str(CONFIG_FILE)))
-config_loader = ConfigLoader(config_path=str(TUILKIT_CONFIG))
+config_loader = ConfigLoader(config_path=str(CONFIG_FILE))
 colour_manager = ColourManager(config_loader.load_colour_config())
 logger = Logger(colour_manager)
 CONFIG = config_loader.load_config(str(CONFIG_FILE))
@@ -145,15 +164,37 @@ def run_edge_cases() -> None:
         bad_json.unlink(missing_ok=True)
 
 
+def run_compositor_demo() -> None:
+    log_line("Launching compositor capture demo (headless)...", key="!proc")
+    try:
+        import subprocess
+        result = subprocess.run(
+            [sys.executable, str(HERE.parent / "compositor_examples.py"),
+             "--demo", "capture", "--no-clear"],
+            capture_output=True, text=True,
+        )
+        for line in result.stdout.splitlines():
+            log_line(line, key="!info")
+        if result.returncode != 0:
+            log_line(f"Compositor demo exited {result.returncode}", key="!error")
+            for line in result.stderr.splitlines():
+                log_line(line, key="!error")
+        else:
+            log_line("Compositor demo completed.", key="!done")
+    except Exception as exc:
+        log_line(f"Could not run compositor demo: {exc}", key="!error")
+
+
 def menu_loop() -> None:
     while True:
         print()
         log_line("1. Config and path report", key="!list")
         log_line("2. tUilKit factory demo", key="!list")
         log_line("3. Edge-case checks", key="!list")
-        log_line("4. Exit", key="!list")
+        log_line("4. Compositor capture demo", key="!list")
+        log_line("5. Exit", key="!list")
 
-        choice = input("Select option (1-4): ").strip()
+        choice = input("Select option (1-5): ").strip()
         if choice == "1":
             show_config_and_paths()
         elif choice == "2":
@@ -161,6 +202,8 @@ def menu_loop() -> None:
         elif choice == "3":
             run_edge_cases()
         elif choice == "4":
+            run_compositor_demo()
+        elif choice == "5":
             log_line("Exiting exemplar.", key="!done")
             return
         else:

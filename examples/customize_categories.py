@@ -3,13 +3,69 @@
 Example: Customizing tUilKit Logging Categories
 
 This example shows different ways to customize logging categories in tUilKit.
+Run from the examples/ folder: python customize_categories.py
 """
 
-import os
+import sys
 import json
-from tUilKit.utils.output import Logger, ColourManager
-from tUilKit.utils.fs import FileSystem
-from tUilKit.config.config import ConfigLoader
+from pathlib import Path
+
+# ---------------------------------------------------------------------------
+# Bootstrap: resolve src path and config from test_paths.json
+# ---------------------------------------------------------------------------
+HERE = Path(__file__).resolve()
+_paths_file = HERE.parent / "test_paths.json"
+if not _paths_file.exists():
+    raise FileNotFoundError(
+        "test_paths.json not found. Run 'python TESTS_CONFIG.py' first."
+    )
+with open(_paths_file, encoding="utf-8") as _f:
+    _p = json.load(_f)
+
+PROJECT_ROOT = Path(_p["project_root"])
+sys.path.insert(0, str(PROJECT_ROOT / "src"))
+
+
+def _resolve_config_file(p: dict) -> Path:
+    for key in ("config_file", "tuilkit_config_file"):
+        raw = p.get(key)
+        if raw:
+            c = Path(raw)
+            if c.exists():
+                return c
+    for folder_key in ("config_folder", "tests_config_folder", "test_config_folder"):
+        folder = p.get(folder_key)
+        if folder:
+            c = Path(folder) / "tUilKit_CONFIG.json"
+            if c.exists():
+                return c
+    return PROJECT_ROOT / "config" / "tUilKit_CONFIG.json"
+
+
+CONFIG_FILE = _resolve_config_file(_p)
+
+# Pre-seed the factory ConfigLoader so all factory calls resolve correctly.
+import tUilKit.factories as _factories
+from tUilKit.utils.config import ConfigLoader as _ConfigLoader
+
+_factories.reset_factories()
+_factories._config_loader = _ConfigLoader(config_path=str(CONFIG_FILE))
+
+# ---------------------------------------------------------------------------
+# Imports (after sys.path is set)
+# ---------------------------------------------------------------------------
+from tUilKit.utils.output import Logger, ColourManager  # noqa: E402
+from tUilKit.utils.fs import FileSystem  # noqa: E402
+
+
+# ---------------------------------------------------------------------------
+# Shared helper
+# ---------------------------------------------------------------------------
+
+def _make_logger() -> Logger:
+    """Return a fresh Logger seeded from the project config."""
+    loader = _ConfigLoader(config_path=str(CONFIG_FILE))
+    return Logger(ColourManager(loader.load_colour_config()))
 
 def example_1_modify_global_config():
     """
@@ -18,12 +74,7 @@ def example_1_modify_global_config():
     """
     print("=== Method 1: Modify GLOBAL_CONFIG.json ===")
 
-    # Load colour config using ConfigLoader
-    config_loader = ConfigLoader()
-    colour_config = config_loader.load_colour_config()
-
-    colour_manager = ColourManager(colour_config)
-    logger = Logger(colour_manager)
+    logger = _make_logger()
 
     # Now you can use the custom categories defined in GLOBAL_CONFIG.json
     logger.colour_log("!info", "Testing custom 'debug' category", category="debug")
@@ -38,11 +89,8 @@ def example_2_runtime_customization():
     """
     print("\n=== Method 2: Runtime Customization ===")
 
-    # Load colour config using ConfigLoader
-    config_loader = ConfigLoader()
-    colour_config = config_loader.load_colour_config()
-
-    colour_manager = ColourManager(colour_config)
+    loader = _ConfigLoader(config_path=str(CONFIG_FILE))
+    colour_manager = ColourManager(loader.load_colour_config())
 
     # Define custom log files
     custom_log_files = {
@@ -87,11 +135,8 @@ def example_3_category_inheritance():
     """
     print("\n=== Method 3: Category Inheritance ===")
 
-    # Load colour config using ConfigLoader
-    config_loader = ConfigLoader()
-    colour_config = config_loader.load_colour_config()
-
-    colour_manager = ColourManager(colour_config)
+    loader = _ConfigLoader(config_path=str(CONFIG_FILE))
+    colour_manager = ColourManager(loader.load_colour_config())
 
     # Advanced category setup with inheritance
     advanced_categories = {
@@ -126,12 +171,7 @@ def example_4_dynamic_categories():
     """
     print("\n=== Method 4: Dynamic Categories ===")
 
-    # Load colour config using ConfigLoader
-    config_loader = ConfigLoader()
-    colour_config = config_loader.load_colour_config()
-
-    colour_manager = ColourManager(colour_config)
-    logger = Logger(colour_manager)
+    logger = _make_logger()
 
     # Start with base categories
     dynamic_categories = {
